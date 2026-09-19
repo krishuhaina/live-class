@@ -1,445 +1,294 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>tutor Mohan - Real-Time Whiteboard</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>tutor Mohan - Maximized + Drive Record</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 <style>
-:root{--bg:#f8fafc;--bg2:#ffffff;--text:#0f172a;--border:#e2e8f0;--board:#ffffff;--accent:#ff5e1a;--navy:#0f2142;--toolbar:#ffffff}
+:root{--bg:#f8fafc;--bg2:#fff;--text:#0f172a;--border:#e2e8f0;--board:#fff;--accent:#ff5e1a;--navy:#0f2142;--toolbar:#fff}
 [data-theme="dark"]{--bg:#0f172a;--bg2:#020617;--text:#f1f5f9;--border:#1e293b;--board:#0b1220;--toolbar:#0f172a}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Arial;overflow:hidden}
-.appWrapper{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden;transition:all.3s}
-/* HEADER - Role Based */
-.header{height:60px;background:var(--bg2);border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
-.brand{line-height:0.85;font-family:'Arial Black',Arial}.brand.t1{color:var(--navy);font-weight:900;font-size:26px;letter-spacing:-0.5px}[data-theme="dark"].brand.t1{color:#fff}.brand.t2{color:var(--accent);font-weight:900;font-size:32px;margin-top:-2px}
-.headerRight{display:flex;gap:8px;align-items:center}
-.btn{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;font-size:12px;transition:.15s}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#ef4444;color:#fff;border-color:#ef4444}
-.workspace{display:flex;flex:1;overflow:hidden;position:relative}
-/* BOARD AREA - Fixed Aspect Ratio Wrapper */
-.boardZone{flex:1;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px;overflow:hidden;position:relative}
-.viewportLock{width:min(1000px,100%);aspect-ratio:10/7;max-height:72vh;position:relative;background:var(--board);border:3px solid var(--border);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.12);overflow:hidden;transform-origin:center;flex-shrink:0}
+.appWrapper{width:100vw;height:100vh;display:flex;flex-direction:column}
+.header{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0}
+.brand{line-height:0.85;font-family:'Arial Black',Arial}.brand.t1{color:var(--navy);font-weight:900;font-size:24px}[data-theme="dark"].brand.t1{color:#fff}.brand.t2{color:var(--accent);font-weight:900;font-size:28px;margin-top:-2px}
+.btn{padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;font-size:11px}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#ef4444;color:#fff}
+.workspace{display:flex;flex:1;overflow:hidden}
+/* 1. SCREEN REAL-ESTATE MAXIMIZATION - Canvas consumes all remaining */
+.boardZone{flex:1;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative;border-right:1px solid var(--border)}
+.viewportLock{flex:1;width:100%;height:100%;position:relative;background:var(--board);border:1px solid var(--border);overflow:hidden}
 .canvasStack{position:absolute;inset:0;width:100%;height:100%}
-#docCanvas{position:absolute;inset:0;width:100%;height:100%} #drawCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;z-index:3}
-#textLayer{position:absolute;inset:0;z-index:4;pointer-events:none}.textNode{position:absolute;pointer-events:auto;min-width:40px;outline:none;border:1px dashed var(--accent);padding:4px 6px;background:rgba(255,255,255,.85);color:#000;font-size:16px;line-height:1.2;white-space:pre-wrap}
-.dimLabel{position:absolute;z-index:20;background:#0f172a;color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;pointer-events:none;transform:translate(-50%,-120%)}
-/* VIDEO PANE - Strict Ordering Teacher Top */
-.videoPane{width:300px;background:var(--bg2);border-left:2px solid var(--border);display:flex;flex-direction:column;padding:8px;gap:8px;overflow-y:auto;flex-shrink:0}
-.vCard{position:relative;background:#000;border-radius:12px;overflow:hidden;border:2px solid var(--border);aspect-ratio:16/9;flex-shrink:0}
-.vCard.teacher{order:-10;border-color:var(--accent);height:140px}.vCard.speaking{border-color:#22c55e;box-shadow:0 0 12px #22c55e}
+#docCanvas,#drawCanvas{position:absolute;inset:0;width:100%;height:100%} #drawCanvas{touch-action:none;z-index:3}
+#textLayer{position:absolute;inset:0;z-index:4;pointer-events:none}.textNode{position:absolute;pointer-events:auto;min-width:40px;outline:none;border:1px dashed var(--accent);padding:4px 6px;background:rgba(255,255,255,.9);color:#000;font-size:16px}
+.dimLabel{position:absolute;z-index:20;background:#0f172a;color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;pointer-events:none}
+.videoPane{width:300px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;padding:8px;gap:8px;overflow-y:auto;flex-shrink:0}
+.vCard{position:relative;background:#000;border-radius:12px;overflow:hidden;border:2px solid var(--border);aspect-ratio:16/9;flex-shrink:0}.vCard.teacher{order:-10;border-color:var(--accent)}.vCard.speaking{border-color:#22c55e;box-shadow:0 0 10px #22c55e}
 .vCard video{width:100%;height:100%;object-fit:cover}.vMeta{position:absolute;bottom:4px;left:6px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:20px}
-.slideBar{width:min(1000px,100%);height:64px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;gap:8px;align-items:center;padding:6px 10px;overflow-x:auto;margin-top:10px;flex-shrink:0}
-.sThumb{min-width:84px;height:50px;background:#fff;border:2px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0;color:#000}.sThumb.active{border-color:var(--accent)}
-/* FLOATING TOOLBAR - Bounded + Collapsible + Mutual Exclusion */
-.floatTB{position:absolute;left:14px;top:14px;z-index:30;width:54px;background:var(--toolbar);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;touch-action:none}
-.floatTB.dot{width:44px;height:44px;border-radius:50%;background:var(--navy);border:2px solid var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.tbHead{height:28px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;cursor:grab;font-size:12px}
-.tbBody{padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center}
-.tBtn{width:40px;height:40px;border-radius:11px;border:2px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:.15s}.tBtn.on{border-color:var(--accent);background:var(--accent);color:#fff}
-.pop{position:absolute;left:56px;top:0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px;display:none;flex-direction:column;gap:10px;z-index:40;min-width:160px;box-shadow:0 12px 28px rgba(0,0,0,.18)}
-.pop.show{display:flex}
+
+/* 3. TOTAL INTERACTIVE TOOL BAR FUNCTIONALITY FIX */
+.floatTB{position:absolute;left:10px;top:10px;z-index:30;width:52px;background:var(--toolbar);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;touch-action:none}
+.floatTB.dot{width:44px;height:44px;border-radius:50%;background:var(--navy);border:2px solid var(--accent);cursor:pointer}
+.tbHead{height:26px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;cursor:grab;font-size:12px}
+.tbBody{padding:8px 6px;display:flex;flex-direction:column;gap:7px;align-items:center}
+.tBtn{width:40px;height:40px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}.tBtn.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.pop{position:absolute;left:54px;top:0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px;display:none;flex-direction:column;gap:10px;z-index:40;min-width:180px;box-shadow:0 12px 28px rgba(0,0,0,.18)}.pop.show{display:flex}
 .grid12{display:grid;grid-template-columns:repeat(4,28px);gap:8px}.col{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);cursor:pointer}
-.range{width:100%}
-/* Browser Sandbox */
-.browserBox{position:absolute;inset:0;background:var(--bg2);z-index:12;display:none;flex-direction:column;border-radius:12px;overflow:hidden}
-.bBar{display:flex;gap:6px;padding:8px;background:var(--navy);align-items:center}.bBar input{flex:1;padding:7px 10px;border-radius:8px;border:none;font-size:12px}
-/* Modals */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center}.modal.show{display:flex}
-.modalCard{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;min-width:340px;max-width:90vw;max-height:80vh;overflow:auto}
-.permRow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
-#status{font-size:11px;padding:6px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border)}
+.browserBox{position:absolute;inset:0;background:var(--bg2);z-index:12;display:none;flex-direction:column}.bBar{display:flex;gap:6px;padding:8px;background:var(--navy);align-items:center}.bBar input{flex:1;padding:7px 10px;border-radius:8px;border:none;font-size:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:none;align-items:center;justify-content:center}.modal.show{display:flex}
+.modalCard{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;min-width:360px;max-width:92vw;max-height:85vh;overflow:auto}
+.sGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.sItem{aspect-ratio:16/9;background:#fff;border:2px solid var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;cursor:pointer;color:#000}.sItem.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+#status{font-size:10px;padding:5px 8px;border-radius:8px;background:var(--bg2);border:1px solid var(--border)}
 </style></head><body>
 <div class="appWrapper" id="app" data-theme="light">
 <div class="header">
-<div style="display:flex;align-items:center;gap:14px">
+<div style="display:flex;align-items:center;gap:12px">
 <div class="brand"><div class="t1">tutor</div><div class="t2">Mohan</div></div>
-<div id="roomLabel" style="background:var(--bg);border:1px solid var(--border);padding:5px 10px;border-radius:20px;font-size:11px"></div>
-<button class="btn" onclick="toggleTheme()">🌓 Light/Dark</button>
+<div id="roomLabel" style="background:var(--bg);border:1px solid var(--border);padding:4px 8px;border-radius:20px;font-size:10px"></div>
 <div id="status">OFFLINE</div>
+<button class="btn" onclick="toggleTheme()">🌓</button>
+<button class="btn" onclick="openSlideModal()">📑 Slides</button>
 </div>
-<div class="headerRight">
-<button class="btn" id="recBtn" onclick="toggleRec()">● Recording</button>
-<button class="btn" onclick="openParticipants()">👥 <span id="partCount">1</span> Participants</button>
+<div style="display:flex;gap:6px">
+<button class="btn" id="recBtn" onclick="toggleDriveRecording()">● Record to Drive</button>
+<button class="btn" onclick="openParticipants()">👥 <span id="partCount">1</span></button>
 <button class="btn primary" id="clsBtn" onclick="handleClassBtn()"><span id="clsTx">Start Class</span></button>
 </div>
 </div>
 
 <div class="workspace">
-<div class="boardZone">
+<div class="boardZone" id="boardZone">
 <div class="viewportLock" id="viewportLock">
 <div class="canvasStack" id="canvasStack">
-<canvas id="docCanvas"></canvas>
-<canvas id="drawCanvas"></canvas>
-<div id="textLayer"></div>
-<!-- Floating Toolbar -->
+<canvas id="docCanvas"></canvas><canvas id="drawCanvas"></canvas><div id="textLayer"></div>
 <div class="floatTB" id="floatTB">
-<div class="tbHead" id="dragHead"><span>⋮⋮</span><span onclick="toggleCollapse()" style="cursor:pointer;background:#ffffff22;padding:2px 6px;border-radius:6px">—</span></div>
+<div class="tbHead" id="dragHead"><span>⋮⋮</span><span onclick="toggleCollapse()" style="cursor:pointer;background:#fff2;padding:2px 6px;border-radius:6px">—</span></div>
 <div class="tbBody" id="tbBody">
-<button class="tBtn on" data-tool="pencil" onclick="selectTool('pencil')" title="Pencil">✏️</button>
-<button class="tBtn" data-tool="text" onclick="selectTool('text')" title="Text In-Place">T</button>
-<div style="position:relative"><button class="tBtn" data-tool="shape" onclick="togglePop('shapePop')" title="Shape">⬜</button>
-<div class="pop" id="shapePop"><b style="font-size:11px">Shape Tool - Drag for size</b>
+<button class="tBtn on" data-tool="pencil" onclick="selectTool('pencil')">✏️</button>
+<button class="tBtn" data-tool="text" onclick="selectTool('text')">T</button>
+<div style="position:relative"><button class="tBtn" data-tool="shape" onclick="togglePop('shapePop')">⬜</button>
+<div class="pop" id="shapePop"><b style="font-size:11px">Shape - Drag for W/H</b>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
 <button class="btn" onclick="setShape('rect')">Rectangle</button><button class="btn" onclick="setShape('circle')">Circle</button>
 <button class="btn" onclick="setShape('line')">Line</button><button class="btn" onclick="setShape('arrow')">Arrow</button>
 </div><div id="shapeDim" style="font-size:11px;color:var(--accent)">W:0 H:0</div></div></div>
-<div style="position:relative"><button class="tBtn" data-tool="eraser" onclick="togglePop('eraserPop')" title="Eraser">🧹</button>
-<div class="pop" id="eraserPop"><b style="font-size:11px">Eraser - Triple Modal</b>
-<button class="btn" id="e-point" onclick="setEraserMode('point')">Point Eraser - Precise path</button>
-<button class="btn" id="e-stroke" onclick="setEraserMode('stroke')">Stroke Eraser - Full object</button>
-<button class="btn danger" onclick="clearPage()">Clear Page - Wipe all</button></div></div>
-<div style="position:relative"><button class="tBtn" data-tool="color" onclick="togglePop('colorPop')" title="Color & Thickness">🎨</button>
-<div class="pop" id="colorPop" style="min-width:220px"><b style="font-size:11px">12 Colors + Thickness</b>
-<div class="grid12" id="pal"></div>
-<div><label style="font-size:11px">Thickness: <span id="thickVal">6</span>px</label><input class="range" type="range" min="1" max="36" value="6" id="thickRange" oninput="onThickness(this.value)"></div>
-<div id="curColorPreview" style="width:100%;height:28px;border-radius:8px;border:1px solid var(--border)"></div></div></div>
-<button class="tBtn" data-tool="media" onclick="document.getElementById('docInput').click()" title="PDF / Image">📄</button>
-<button class="tBtn" data-tool="browser" onclick="openBrowser()" title="Browser">🌐</button>
-<button class="tBtn" data-tool="hand" onclick="selectTool('hand')" title="Hand - Pan">✋</button>
+<div style="position:relative"><button class="tBtn" data-tool="eraser" onclick="togglePop('eraserPop')">🧹</button>
+<div class="pop" id="eraserPop"><b style="font-size:11px">Eraser Triple Modal</b>
+<button class="btn" onclick="setEraserMode('point')">Point Eraser - Precise</button>
+<button class="btn" onclick="setEraserMode('stroke')">Stroke Eraser - Full object</button>
+<button class="btn danger" onclick="clearPage()">Clear Page</button></div></div>
+<div style="position:relative"><button class="tBtn" data-tool="color" onclick="togglePop('colorPop')">🎨</button>
+<div class="pop" id="colorPop" style="min-width:220px"><b style="font-size:11px">12 Colors + Thickness</b><div class="grid12" id="pal"></div>
+<div><label style="font-size:11px">Thickness <span id="thickVal">6</span>px</label><input type="range" min="1" max="36" value="6" id="thickRange" oninput="onThickness(this.value)" style="width:100%"></div>
+<div id="curColorPreview" style="height:26px;border-radius:8px;border:1px solid var(--border)"></div></div></div>
+<button class="tBtn" data-tool="media" onclick="document.getElementById('docInput').click()">📄</button>
+<button class="tBtn" data-tool="browser" onclick="openBrowser()">🌐</button>
+<button class="tBtn" data-tool="hand" onclick="selectTool('hand')">✋</button>
 </div>
 </div>
-<!-- Browser Sandbox -->
-<div class="browserBox" id="browserBox"><div class="bBar"><span style="color:#fff;font-size:12px;font-weight:700">🌐 Browser Sandbox</span><input id="browserUrl" placeholder="https://en.wikipedia.org" value="https://en.wikipedia.org"><button class="btn primary" onclick="loadBrowser()">Go</button><button class="btn" onclick="closeBrowser()">✕</button></div><iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="flex:1;border:none;background:#fff"></iframe></div>
+<div class="browserBox" id="browserBox"><div class="bBar"><span style="color:#fff;font-size:12px;font-weight:700">🌐 Sandbox</span><input id="browserUrl" value="https://en.wikipedia.org"><button class="btn primary" onclick="loadBrowser()">Go</button><button class="btn" onclick="closeBrowser()">✕</button></div><iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="flex:1;border:none;background:#fff"></iframe></div>
 </div>
 </div>
-<div class="slideBar" id="slideBar"></div>
 </div>
-
-<div class="videoPane" id="videoPane">
-<div style="font-size:11px;font-weight:800;opacity:.7">CONFERENCE - Teacher Top Anchored</div>
-<div id="vcGrid" style="display:flex;flex-direction:column;gap:8px"></div>
-</div>
+<div class="videoPane"><div style="font-size:10px;font-weight:800;opacity:.6">Teacher anchored top</div><div id="vcGrid" style="display:flex;flex-direction:column;gap:8px"></div></div>
 </div>
 </div>
 
-<div class="modal" id="partModal"><div class="modalCard"><div style="display:flex;justify-content:space-between;align-items:center"><b>Participants & Permissions</b><button class="btn" onclick="closeParticipants()">✕</button></div><div id="partList"></div><div id="permControls" style="margin-top:12px"></div></div></div>
+<!-- 2. POP-UP SLIDE PAGINATION PIPELINE -->
+<div class="modal" id="slideModal"><div class="modalCard" style="min-width:560px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📑 Slide Pagination - State Retained</b><button class="btn" onclick="closeSlideModal()">✕</button></div>
+<div style="font-size:11px;opacity:.7;margin-top:4px">Background assets + vector annotations retained in memory. Navigate without wiping.</div>
+<div class="sGrid" id="sGrid"></div>
+<div style="display:flex;gap:6px;margin-top:12px"><button class="btn" onclick="addNewSlide('white')">+ White</button><button class="btn" onclick="addNewSlide('ruled')">+ Ruled</button><button class="btn" onclick="addNewSlide('graph')">+ Graph</button></div>
+</div></div>
+
+<div class="modal" id="partModal"><div class="modalCard"><div style="display:flex;justify-content:space-between"><b>Participants & Permissions</b><button class="btn" onclick="closeParticipants()">✕</button></div><div id="partList" style="margin-top:10px"></div></div></div>
 
 <input type="file" id="docInput" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple hidden>
 <script>
-/* ========= THEME ENGINE ========= */
-function toggleTheme(){ let a=document.getElementById('app'); a.dataset.theme=a.dataset.theme==='light'?'dark':'light'; redrawAll(); }
-
-/* ========= VIEWPORT RIGID CONSTRAINTS + SCALING MATRIX ========= */
+function toggleTheme(){ let a=document.getElementById('app'); a.dataset.theme=a.dataset.theme==='light'?'dark':'light'; scheduleRedraw(); }
 let room=(new URLSearchParams(location.search).get('room')||'mohan-class-1').toLowerCase().replace(/[^a-z0-9-]/g,'-'); let role=new URLSearchParams(location.search).get('role')||'teacher'; let isTeacher=role==='teacher';
 document.getElementById('roomLabel').textContent=room+' | '+(isTeacher?'Teacher':'Student');
 document.getElementById('clsTx').textContent=isTeacher?'Start Class':'Join Class';
-
-let docCanvas=document.getElementById('docCanvas'), docCtx=docCanvas.getContext('2d');
-let drawCanvas=document.getElementById('drawCanvas'), drawCtx=drawCanvas.getContext('2d');
-let textLayer=document.getElementById('textLayer'), viewportLock=document.getElementById('viewportLock'), canvasStack=document.getElementById('canvasStack');
-
-/* State - Multi-Document Multi-Slide Pipeline with Relative Coordinate-Locked Rendering */
+let docCanvas=document.getElementById('docCanvas'), docCtx=docCanvas.getContext('2d'), drawCanvas=document.getElementById('drawCanvas'), drawCtx=drawCanvas.getContext('2d'), textLayer=document.getElementById('textLayer'), viewportLock=document.getElementById('viewportLock');
 let slides=[{id:'s1',bg:'white',docType:'none',docSrc:null,docW:1000,docH:700,strokes:[],texts:[],zoom:1,panX:0,panY:0}];
-let curSlideIdx=0;
-let curTool='pencil', curShape='rect', curEraser='point', curColor='#000000', curThick=6;
-let zoomScale=1, panX=0, panY=0; // Document Zoom Scale factor for Annotation Coordinate * Document Zoom Scale
-
+let curSlideIdx=0, curTool='pencil', curShape='rect', curEraser='point', curColor='#000000', curThick=6, zoomScale=1, panX=0, panY=0;
 function getCurSlide(){ return slides[curSlideIdx]; }
-
-/* Scaling Mechanics - Uniform Container Scaling */
-function resizeCanvases(){
- let rect=viewportLock.getBoundingClientRect();
- docCanvas.width=rect.width*window.devicePixelRatio; docCanvas.height=rect.height*window.devicePixelRatio;
- drawCanvas.width=rect.width*window.devicePixelRatio; drawCanvas.height=rect.height*window.devicePixelRatio;
- docCtx.setTransform(window.devicePixelRatio,0,0,window.devicePixelRatio,0,0);
- drawCtx.setTransform(window.devicePixelRatio,0,0,window.devicePixelRatio,0,0);
- redrawAll();
-}
-window.addEventListener('resize',resizeCanvases);
-
-/* Relative Canvas Vector Binding: Annotation Coordinate * Document Zoom Scale factor */
-function toCanvasNorm(clientX,clientY){
- let r=drawCanvas.getBoundingClientRect();
- let x=(clientX-r.left - panX)/zoomScale / r.width;
- let y=(clientY-r.top - panY)/zoomScale / r.height;
- return {x:Math.max(0,Math.min(1,x)), y:Math.max(0,Math.min(1,y))};
-}
-function fromCanvasNorm(nx,ny){
- let r=drawCanvas.getBoundingClientRect();
- let x=nx*r.width*zoomScale + panX;
- let y=ny*r.height*zoomScale + panY;
- return {x,y};
+function toNorm(cx,cy){ let r=drawCanvas.getBoundingClientRect(); let x=(cx-r.left-panX)/zoomScale/r.width, y=(cy-r.top-panY)/zoomScale/r.height; return {x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y))}; }
+function fromNorm(nx,ny){ let r=drawCanvas.getBoundingClientRect(); return {x:nx*r.width*zoomScale+panX,y:ny*r.height*zoomScale+panY}; }
+function resize(){ let r=viewportLock.getBoundingClientRect(); let dpr=window.devicePixelRatio; docCanvas.width=r.width*dpr; docCanvas.height=r.height*dpr; drawCanvas.width=r.width*dpr; drawCanvas.height=r.height*dpr; docCtx.setTransform(dpr,0,0,dpr,0,0); drawCtx.setTransform(dpr,0,0,dpr,0,0); scheduleRedraw(); }
+window.addEventListener('resize',resize);
+let needs=false; function scheduleRedraw(){ if(!needs){ needs=true; requestAnimationFrame(()=>{ redraw(); needs=false; }); } }
+function redraw(){
+ let s=getCurSlide(), r=viewportLock.getBoundingClientRect();
+ docCtx.clearRect(0,0,r.width,r.height); drawCtx.clearRect(0,0,r.width,r.height);
+ if(s.docType!=='none' && s.docSrc){ let img=new Image(); img.onload=()=>{ let sc=Math.min(r.width/s.docW,r.height/s.docH)*s.zoom; let w=s.docW*sc,h=s.docH*sc, ox=(r.width-w)/2+s.panX, oy=(r.height-h)/2+s.panY; docCtx.drawImage(img,ox,oy,w,h); }; img.src=s.docSrc; }
+ else { docCtx.fillStyle=document.getElementById('app').dataset.theme==='dark'?'#0b1220':'#fff'; docCtx.fillRect(0,0,r.width,r.height); if(s.bg==='ruled'){ docCtx.strokeStyle='#93c5fd44'; for(let y=40;y<r.height;y+=28){ docCtx.beginPath(); docCtx.moveTo(0,y); docCtx.lineTo(r.width,y); docCtx.stroke(); } } if(s.bg==='graph'){ docCtx.strokeStyle='#e5e7eb55'; for(let x=0;x<r.width;x+=24){ docCtx.beginPath(); docCtx.moveTo(x,0); docCtx.lineTo(x,r.height); docCtx.stroke(); } for(let y=0;y<r.height;y+=24){ docCtx.beginPath(); docCtx.moveTo(0,y); docCtx.lineTo(r.width,y); docCtx.stroke(); } } }
+ s.strokes.forEach(st=>{ let p1=fromNorm(st.nx1,st.ny1), p2=fromNorm(st.nx2,st.ny2); drawCtx.save(); drawCtx.globalAlpha=st.type==='highlighter'?0.35:1; drawCtx.strokeStyle=st.color; drawCtx.lineWidth=st.thick*zoomScale; drawCtx.lineCap='round'; if(st.type==='pen'||st.type==='highlighter'){ drawCtx.beginPath(); drawCtx.moveTo(p1.x,p1.y); drawCtx.lineTo(p2.x,p2.y); drawCtx.stroke(); } else if(st.type==='rect') drawCtx.strokeRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y); else if(st.type==='circle'){ let rad=Math.hypot(p2.x-p1.x,p2.y-p1.y); drawCtx.beginPath(); drawCtx.arc(p1.x,p1.y,rad,0,Math.PI*2); drawCtx.stroke(); } else if(st.type==='line'||st.type==='arrow'){ drawCtx.beginPath(); drawCtx.moveTo(p1.x,p1.y); drawCtx.lineTo(p2.x,p2.y); drawCtx.stroke(); } drawCtx.restore(); });
+ textLayer.innerHTML=''; s.texts.forEach(t=>{ let p=fromNorm(t.nx,t.ny); let d=document.createElement('div'); d.className='textNode'; d.style.left=p.x+'px'; d.style.top=p.y+'px'; d.style.fontSize=(t.thick*2.2*zoomScale)+'px'; d.style.color=t.color; d.textContent=t.text; textLayer.appendChild(d); });
+ document.getElementById('curColorPreview').style.background=curColor; document.getElementById('thickVal').textContent=curThick;
+ renderSlideModalGrid();
 }
 
-/* Rendering - Thread Isolation via RAF */
-let needsRedraw=false;
-function scheduleRedraw(){ if(!needsRedraw){ needsRedraw=true; requestAnimationFrame(()=>{ redrawAll(); needsRedraw=false; }); } }
-function redrawAll(){
- let slide=getCurSlide();
- let r=viewportLock.getBoundingClientRect();
- docCtx.clearRect(0,0,r.width,r.height);
- drawCtx.clearRect(0,0,r.width,r.height);
- // Document with Independent Aspect-Ratio Vector Bounds
- if(slide.docType==='image' && slide.docSrc){
-   let img=new Image(); img.onload=()=>{
-     let scale=Math.min(r.width/slide.docW, r.height/slide.docH)*slide.zoom;
-     let w=slide.docW*scale, h=slide.docH*scale;
-     let ox=(r.width-w)/2 + slide.panX, oy=(r.height-h)/2 + slide.panY;
-     docCtx.drawImage(img,ox,oy,w,h);
-   }; img.src=slide.docSrc;
- } else if(slide.docType==='pdf' && slide.docSrc){
-   let img=new Image(); img.onload=()=>{
-     let scale=Math.min(r.width/slide.docW, r.height/slide.docH)*slide.zoom;
-     let w=slide.docW*scale, h=slide.docH*scale;
-     let ox=(r.width-w)/2 + slide.panX, oy=(r.height-h)/2 + slide.panY;
-     docCtx.drawImage(img,ox,oy,w,h);
-   }; img.src=slide.docSrc;
- } else {
-   // whiteboard bg
-   docCtx.fillStyle=document.getElementById('app').dataset.theme==='dark'?'#0b1220':'#ffffff';
-   docCtx.fillRect(0,0,r.width,r.height);
-   if(slide.bg==='ruled'){ docCtx.strokeStyle='#93c5fd44'; for(let y=40;y<r.height;y+=28){ docCtx.beginPath(); docCtx.moveTo(0,y); docCtx.lineTo(r.width,y); docCtx.stroke(); } }
- }
-
- // Draw strokes with relative binding
- slide.strokes.forEach(s=>{
-   let p1=fromCanvasNorm(s.nx1,s.ny1), p2=fromCanvasNorm(s.nx2,s.ny2);
-   drawCtx.save();
-   drawCtx.globalAlpha=s.type==='highlighter'?0.35:1;
-   drawCtx.strokeStyle=s.color; drawCtx.lineWidth=s.thick*zoomScale; drawCtx.lineCap='round'; drawCtx.lineJoin='round';
-   if(s.type==='pen'||s.type==='highlighter'){ drawCtx.beginPath(); drawCtx.moveTo(p1.x,p1.y); drawCtx.lineTo(p2.x,p2.y); drawCtx.stroke(); }
-   else if(s.type==='rect'){ drawCtx.strokeRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y); }
-   else if(s.type==='circle'){ let rad=Math.hypot(p2.x-p1.x,p2.y-p1.y); drawCtx.beginPath(); drawCtx.arc(p1.x,p1.y,rad,0,Math.PI*2); drawCtx.stroke(); }
-   else if(s.type==='line'||s.type==='arrow'){ drawCtx.beginPath(); drawCtx.moveTo(p1.x,p1.y); drawCtx.lineTo(p2.x,p2.y); drawCtx.stroke(); }
-   drawCtx.restore();
- });
-
- // Texts - relative
- textLayer.innerHTML=''; slide.texts.forEach(t=>{
-   let p=fromCanvasNorm(t.nx,t.ny);
-   let div=document.createElement('div'); div.className='textNode'; div.style.left=p.x+'px'; div.style.top=p.y+'px'; div.style.fontSize=(t.thick*2.2*zoomScale)+'px'; div.style.color=t.color; div.textContent=t.text; textLayer.appendChild(div);
- });
-
- renderSlideBar();
- document.getElementById('curColorPreview').style.background=curColor;
- document.getElementById('thickVal').textContent=curThick;
-}
-
-/* Slide Pagination */
-function renderSlideBar(){
- let bar=document.getElementById('slideBar'); bar.innerHTML='';
+/* 2. Modal Pagination - State Retention */
+function openSlideModal(){ document.getElementById('slideModal').classList.add('show'); renderSlideModalGrid(); }
+function closeSlideModal(){ document.getElementById('slideModal').classList.remove('show'); }
+function renderSlideModalGrid(){
+ let g=document.getElementById('sGrid'); g.innerHTML='';
  slides.forEach((s,i)=>{
-   let d=document.createElement('div'); d.className='sThumb'+(i===curSlideIdx?' active':'');
-   d.innerHTML=`Slide ${i+1}<span style="font-size:8px">${s.docType}</span>`;
-   d.onclick=()=>{ curSlideIdx=i; zoomScale=s.zoom; panX=s.panX; panY=s.panY; redrawAll(); broadcast({type:'switchSlide',idx:i}); };
-   bar.appendChild(d);
+   let d=document.createElement('div'); d.className='sItem'+(i===curSlideIdx?' active':'');
+   d.innerHTML=`Slide ${i+1}<span style="font-size:9px;opacity:.6">${s.docType} | ${s.strokes.length+ s.texts.length} vectors</span>`;
+   d.onclick=()=>{ curSlideIdx=i; zoomScale=s.zoom; panX=s.panX; panY=s.panY; scheduleRedraw(); broadcast({type:'switchSlide',idx:i}); closeSlideModal(); };
+   g.appendChild(d);
  });
 }
+function addNewSlide(bg){ slides.push({id:'s'+Date.now(),bg,docType:'none',docSrc:null,docW:1000,docH:700,strokes:[],texts:[],zoom:1,panX:0,panY:0}); curSlideIdx=slides.length-1; scheduleRedraw(); broadcast({type:'newSlides',slides}); }
 
-/* TOOLBAR - Bounds + Collapsible + Mutual Exclusion Fix */
-let floatTB=document.getElementById('floatTB'), dragHead=document.getElementById('dragHead');
-let isDragging=false, dOffX=0,dOffY=0, isCollapsed=false;
-function toggleCollapse(){
- if(isCollapsed){
-   floatTB.classList.remove('dot'); document.getElementById('tbBody').style.display='flex'; dragHead.style.display='flex'; floatTB.style.width='54px'; floatTB.style.height='auto';
-   isCollapsed=false;
- } else {
-   floatTB.dataset.prev=`${floatTB.style.left}|${floatTB.style.top}`;
-   floatTB.classList.add('dot'); floatTB.innerHTML='<div style="color:#fff;font-size:20px;width:100%;height:100%;display:flex;align-items:center;justify-content:center" onclick="toggleCollapse()">●</div>';
-   isCollapsed=true;
- }
-}
-function initDrag(){
- dragHead.addEventListener('pointerdown',e=>{ if(floatTB.classList.contains('dot')) return; isDragging=true; dOffX=e.clientX-floatTB.offsetLeft; dOffY=e.clientY-floatTB.offsetTop; dragHead.setPointerCapture(e.pointerId); });
- dragHead.addEventListener('pointermove',e=>{
-   if(!isDragging) return;
-   let wrapRect=viewportLock.getBoundingClientRect(); let tbW=floatTB.offsetWidth, tbH=floatTB.offsetHeight;
-   let newL=e.clientX-dOffX - viewportLock.offsetLeft, newT=e.clientY-dOffY - viewportLock.offsetTop;
-   newL=Math.max(0,Math.min(wrapRect.width-tbW-2,newL)); newT=Math.max(0,Math.min(wrapRect.height-tbH-2,newT));
-   floatTB.style.left=newL+'px'; floatTB.style.top=newT+'px';
- });
- dragHead.addEventListener('pointerup',()=>isDragging=false);
-}
-initDrag();
-
+/* 3. TOTAL TOOLBAR FIX - Mutual Exclusion */
 function togglePop(id){ let p=document.getElementById(id); let show=p.classList.contains('show'); document.querySelectorAll('.pop').forEach(x=>x.classList.remove('show')); if(!show) p.classList.add('show'); }
 function selectTool(t){
- // Mutual Exclusion Selection Fix - release previous instantly
- curTool=t;
+ curTool=t; // Instant state application
  document.querySelectorAll('.tBtn').forEach(b=>b.classList.remove('on'));
  let btn=document.querySelector(`[data-tool="${t}"]`); if(btn) btn.classList.add('on');
  drawCanvas.style.pointerEvents=t==='hand'?'none':'auto';
  if(t!=='shape' && t!=='eraser' && t!=='color') document.querySelectorAll('.pop').forEach(x=>x.classList.remove('show'));
+ // Break previous loop cleanly
+ drawing=false; if(dimLabel){ dimLabel.remove(); dimLabel=null; }
 }
 function setShape(s){ curShape=s; selectTool(s); document.querySelectorAll('.pop').forEach(x=>x.classList.remove('show')); }
-function setEraserMode(m){ curEraser=m; document.getElementById('e-point').classList.toggle('primary',m==='point'); document.getElementById('e-stroke').classList.toggle('primary',m==='stroke'); selectTool('eraser'); }
-function clearPage(){ if(confirm('Clear entire page?')){ getCurSlide().strokes=[]; getCurSlide().texts=[]; scheduleRedraw(); broadcast({type:'clear',slide:curSlideIdx}); } }
-
-/* Granular Tools */
+function setEraserMode(m){ curEraser=m; selectTool('eraser'); }
+function clearPage(){ if(confirm('Clear page?')){ getCurSlide().strokes=[]; getCurSlide().texts=[]; scheduleRedraw(); broadcast({type:'clear',slide:curSlideIdx}); } }
 let palette=['#000000','#ff0000','#0066ff','#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff','#ff5e1a','#00d2ff','#84cc16'];
 let pal=document.getElementById('pal'); palette.forEach(c=>{ let d=document.createElement('div'); d.className='col'; d.style.background=c; d.onclick=()=>{ curColor=c; document.getElementById('curColorPreview').style.background=c; }; pal.appendChild(d); });
 function onThickness(v){ curThick=parseInt(v); document.getElementById('thickVal').textContent=v; }
 
-/* Pencil + Shape + Eraser + Text In-Place Editing */
-let drawing=false, startNorm=null, lastNorm=null, dimLabel=null;
+/* Drawing Listeners - Fully Active */
+let drawing=false, startN=null, lastN=null, dimLabel=null;
 drawCanvas.addEventListener('pointerdown',e=>{
  if(curTool==='hand') return;
  if(curTool==='text'){
-   let n=toCanvasNorm(e.clientX,e.clientY);
-   // In-Place Editing - spawn caret at exact coordinate
-   let p=fromCanvasNorm(n.x,n.y);
-   let input=document.createElement('div'); input.contentEditable=true; input.className='textNode'; input.style.left=p.x+'px'; input.style.top=p.y+'px'; input.style.fontSize=(curThick*2.2*zoomScale)+'px'; input.style.color=curColor; input.textContent=''; textLayer.appendChild(input); input.focus();
-   input.addEventListener('blur',()=>{
-     if(input.textContent.trim()){ let txt={nx:n.x,ny:n.y,text:input.textContent,color:curColor,thick:curThick}; getCurSlide().texts.push(txt); broadcast({type:'text',data:txt,slide:curSlideIdx}); }
-     input.remove(); scheduleRedraw();
-   });
+   let n=toNorm(e.clientX,e.clientY); let p=fromNorm(n.x,n.y);
+   let input=document.createElement('div'); input.contentEditable=true; input.className='textNode'; input.style.left=p.x+'px'; input.style.top=p.y+'px'; input.style.fontSize=(curThick*2.2*zoomScale)+'px'; input.style.color=curColor; textLayer.appendChild(input); input.focus();
+   input.addEventListener('blur',()=>{ if(input.textContent.trim()){ let txt={nx:n.x,ny:n.y,text:input.textContent,color:curColor,thick:curThick}; getCurSlide().texts.push(txt); broadcast({type:'text',data:txt,slide:curSlideIdx}); } input.remove(); scheduleRedraw(); });
    input.addEventListener('keydown',ev=>{ if(ev.key==='Enter' &&!ev.shiftKey){ ev.preventDefault(); input.blur(); } });
    return;
  }
- drawing=true; startNorm=toCanvasNorm(e.clientX,e.clientY); lastNorm=startNorm;
- if(['rect','circle','line','arrow'].includes(curTool)||['rect','circle','line','arrow'].includes(curShape)){
-   dimLabel=document.createElement('div'); dimLabel.className='dimLabel'; viewportLock.appendChild(dimLabel);
- }
+ drawing=true; startN=toNorm(e.clientX,e.clientY); lastN=startN;
+ if(['rect','circle','line','arrow'].includes(curTool)||['rect','circle','line','arrow'].includes(curShape)){ dimLabel=document.createElement('div'); dimLabel.className='dimLabel'; viewportLock.appendChild(dimLabel); }
 });
 drawCanvas.addEventListener('pointermove',e=>{
- if(!drawing) return;
- let cur=toCanvasNorm(e.clientX,e.clientY);
- if(curTool==='pencil'){
-   let stroke={type:'pen',nx1:lastNorm.x,ny1:lastNorm.y,nx2:cur.x,ny2:cur.y,color:curColor,thick:curThick};
-   getCurSlide().strokes.push(stroke); broadcast({type:'draw',data:stroke,slide:curSlideIdx}); lastNorm=cur; scheduleRedraw();
- } else if(curTool==='eraser'){
-   if(curEraser==='point'){
-     // Point Eraser - Standard pixel/coordinate eraser
-     let slide=getCurSlide(); slide.strokes=slide.strokes.filter(s=>{
-       let dx=s.nx1-cur.x, dy=s.ny1-cur.y; return Math.hypot(dx,dy)>0.02;
-     }); scheduleRedraw(); broadcast({type:'erasePoint',pos:cur,slide:curSlideIdx});
-   }
-   if(dimLabel){ dimLabel.style.left=e.clientX+'px'; dimLabel.style.top=e.clientY+'px'; }
- }
- // Shape real-time dimension indicator
- if(dimLabel && startNorm){
-   let w=Math.abs((cur.x-startNorm.x)*1000), h=Math.abs((cur.y-startNorm.y)*1000);
-   dimLabel.textContent=`W:${w|0}px H:${h|0}px`;
-   dimLabel.style.left=e.clientX+'px'; dimLabel.style.top=e.clientY+'px';
-   // preview
-   scheduleRedraw();
-   let p1=fromCanvasNorm(startNorm.x,startNorm.y), p2=fromCanvasNorm(cur.x,cur.y);
-   drawCtx.save(); drawCtx.strokeStyle=curColor; drawCtx.lineWidth=curThick*zoomScale; drawCtx.setLineDash([6,4]);
-   if(curShape==='rect'||curTool==='rect') drawCtx.strokeRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
-   else if(curShape==='circle'||curTool==='circle'){ let r=Math.hypot(p2.x-p1.x,p2.y-p1.y); drawCtx.beginPath(); drawCtx.arc(p1.x,p1.y,r,0,Math.PI*2); drawCtx.stroke(); }
-   else if(curShape==='line'||curTool==='line'){ drawCtx.beginPath(); drawCtx.moveTo(p1.x,p1.y); drawCtx.lineTo(p2.x,p2.y); drawCtx.stroke(); }
-   drawCtx.restore();
- }
+ if(!drawing) return; let cur=toNorm(e.clientX,e.clientY);
+ if(curTool==='pencil'){ let st={type:'pen',nx1:lastN.x,ny1:lastN.y,nx2:cur.x,ny2:cur.y,color:curColor,thick:curThick}; getCurSlide().strokes.push(st); broadcast({type:'draw',data:st,slide:curSlideIdx}); lastN=cur; scheduleRedraw(); }
+ if(curTool==='eraser' && curEraser==='point'){ let s=getCurSlide(); s.strokes=s.strokes.filter(st=>Math.hypot(st.nx1-cur.x,st.ny1-cur.y)>0.02); scheduleRedraw(); broadcast({type:'erasePoint',pos:cur,slide:curSlideIdx}); }
+ if(dimLabel && startN){ let w=Math.abs((cur.x-startN.x)*1000)|0, h=Math.abs((cur.y-startN.y)*1000)|0; dimLabel.textContent=`W:${w} H:${h}`; dimLabel.style.left=e.clientX+'px'; dimLabel.style.top=e.clientY+'px'; document.getElementById('shapeDim').textContent=`W:${w} H:${h}`; }
 });
 drawCanvas.addEventListener('pointerup',e=>{
  if(!drawing) return; drawing=false; if(dimLabel){ dimLabel.remove(); dimLabel=null; }
- let end=toCanvasNorm(e.clientX,e.clientY);
- if(['rect','circle','line','arrow'].includes(curTool)||['rect','circle','line','arrow'].includes(curShape)){
-   let shapeType=curTool==='shape'?curShape:curTool;
-   if(['rect','circle','line','arrow'].includes(shapeType)){
-     let stroke={type:shapeType,nx1:startNorm.x,ny1:startNorm.y,nx2:end.x,ny2:end.y,color:curColor,thick:curThick};
-     getCurSlide().strokes.push(stroke); broadcast({type:'draw',data:stroke,slide:curSlideIdx}); scheduleRedraw();
-   }
- }
- if(curTool==='eraser' && curEraser==='stroke'){
-   // Stroke Eraser - Object-level
-   let slide=getCurSlide(); let hit=null; slide.strokes.forEach((s,i)=>{ if(Math.hypot(s.nx1-end.x,s.ny1-end.y)<0.03 || Math.hypot(s.nx2-end.x,s.ny2-end.y)<0.03) hit=i; });
-   if(hit!==null){ slide.strokes.splice(hit,1); scheduleRedraw(); broadcast({type:'eraseStroke',idx:hit,slide:curSlideIdx}); }
- }
+ let end=toNorm(e.clientX,e.clientY);
+ if(['rect','circle','line','arrow'].includes(curTool)||['rect','circle','line','arrow'].includes(curShape)){ let type=curTool==='shape'?curShape:curTool; if(['rect','circle','line','arrow'].includes(type)){ let st={type,nx1:startN.x,ny1:startN.y,nx2:end.x,ny2:end.y,color:curColor,thick:curThick}; getCurSlide().strokes.push(st); broadcast({type:'draw',data:st,slide:curSlideIdx}); scheduleRedraw(); } }
+ if(curTool==='eraser' && curEraser==='stroke'){ let s=getCurSlide(); for(let i=s.strokes.length-1;i>=0;i--){ if(Math.hypot(s.strokes[i].nx1-end.x,s.strokes[i].ny1-end.y)<0.04){ s.strokes.splice(i,1); broadcast({type:'eraseStroke',idx:i,slide:curSlideIdx}); break; } } scheduleRedraw(); }
 });
 
-/* Advanced Document & Media Tool */
+/* Drag Bound */
+let floatTB=document.getElementById('floatTB'), dragHead=document.getElementById('dragHead'), isDrag=false, offX=0,offY=0, isCollapsed=false;
+function toggleCollapse(){ if(floatTB.classList.contains('dot')){ floatTB.classList.remove('dot'); document.getElementById('tbBody').style.display='flex'; dragHead.style.display='flex'; floatTB.innerHTML=`<div class="tbHead" id="dragHead"><span>⋮⋮</span><span onclick="toggleCollapse()" style="cursor:pointer;background:#fff2;padding:2px 6px;border-radius:6px">—</span></div>`+document.getElementById('tbBody').outerHTML; location.reload(); } else { floatTB.classList.add('dot'); floatTB.innerHTML='<div style="color:#fff;font-size:20px;width:100%;height:100%;display:flex;align-items:center;justify-content:center" onclick="location.reload()">●</div>'; } }
+dragHead.addEventListener('pointerdown',e=>{ isDrag=true; offX=e.clientX-floatTB.offsetLeft; offY=e.clientY-floatTB.offsetTop; dragHead.setPointerCapture(e.pointerId); });
+dragHead.addEventListener('pointermove',e=>{ if(!isDrag) return; let wr=viewportLock.getBoundingClientRect(); let tbW=floatTB.offsetWidth, tbH=floatTB.offsetHeight; let nl=e.clientX-offX-viewportLock.offsetLeft, nt=e.clientY-offY-viewportLock.offsetTop; nl=Math.max(0,Math.min(wr.width-tbW-2,nl)); nt=Math.max(0,Math.min(wr.height-tbH-2,nt)); floatTB.style.left=nl+'px'; floatTB.style.top=nt+'px'; });
+dragHead.addEventListener('pointerup',()=>isDrag=false);
+viewportLock.addEventListener('wheel',e=>{ if(!e.ctrlKey) return; e.preventDefault(); let d=e.deltaY>0?0.9:1.1; zoomScale=Math.max(0.4,Math.min(4,zoomScale*d)); getCurSlide().zoom=zoomScale; scheduleRedraw(); },{passive:false});
+let isPanning=false, pStart=null; viewportLock.addEventListener('pointerdown',e=>{ if(curTool!=='hand') return; isPanning=true; pStart={x:e.clientX-panX,y:e.clientY-panY}; });
+viewportLock.addEventListener('pointermove',e=>{ if(!isPanning) return; panX=e.clientX-pStart.x; panY=e.clientY-pStart.y; getCurSlide().panX=panX; getCurSlide().panY=panY; scheduleRedraw(); });
+viewportLock.addEventListener('pointerup',()=>isPanning=false);
+
+/* Docs */
 document.getElementById('docInput').addEventListener('change',async e=>{
  for(let file of e.target.files){
    if(file.type==='application/pdf'){
      let buf=await file.arrayBuffer(); let pdf=await pdfjsLib.getDocument(buf).promise;
-     for(let p=1;p<=pdf.numPages;p++){
-       let page=await pdf.getPage(p); let vp=page.getViewport({scale:2});
-       let c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; let cx=c.getContext('2d'); await page.render({canvasContext:cx,viewport:vp}).promise;
-       let dataUrl=c.toDataURL('image/jpeg',0.75);
-       slides.push({id:'s'+Date.now()+p,bg:'pdf',docType:'pdf',docSrc:dataUrl,docW:vp.width,docH:vp.height,strokes:[],texts:[],zoom:1,panX:0,panY:0});
-     }
-   } else {
-     let dataUrl=await new Promise(r=>{ let fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); });
-     let img=new Image(); img.onload=()=>{
-       slides.push({id:'s'+Date.now(),bg:'image',docType:'image',docSrc:dataUrl,docW:img.width,docH:img.height,strokes:[],texts:[],zoom:1,panX:0,panY:0});
-       curSlideIdx=slides.length-1; redrawAll(); broadcast({type:'newDoc',slide:slides[slides.length-1]});
-     }; img.src=dataUrl; continue;
-   }
+     for(let p=1;p<=pdf.numPages;p++){ let page=await pdf.getPage(p); let vp=page.getViewport({scale:2}); let c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; let cx=c.getContext('2d'); await page.render({canvasContext:cx,viewport:vp}).promise; let url=c.toDataURL('image/jpeg',0.75); slides.push({id:'s'+Date.now()+p,bg:'pdf',docType:'pdf',docSrc:url,docW:vp.width,docH:vp.height,strokes:[],texts:[],zoom:1,panX:0,panY:0}); }
+   } else { let url=await new Promise(r=>{ let fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); }); let img=new Image(); img.onload=()=>{ slides.push({id:'s'+Date.now(),bg:'image',docType:'image',docSrc:url,docW:img.width,docH:img.height,strokes:[],texts:[],zoom:1,panX:0,panY:0}); curSlideIdx=slides.length-1; scheduleRedraw(); broadcast({type:'newSlides',slides}); }; img.src=url; continue; }
  }
- curSlideIdx=slides.length-1; redrawAll(); broadcast({type:'newSlides',slides:slides});
+ curSlideIdx=slides.length-1; scheduleRedraw(); broadcast({type:'newSlides',slides});
 });
+function openBrowser(){ document.getElementById('browserBox').style.display='flex'; } function closeBrowser(){ document.getElementById('browserBox').style.display='none'; broadcast({type:'browserClose'}); }
+function loadBrowser(){ let u=document.getElementById('browserUrl').value; if(!u.startsWith('http')) u='https://'+u; document.getElementById('browserFrame').src=u; broadcast({type:'browserOpen',url:u}); }
 
-/* Zoom Pan - Relative Binding */
-viewportLock.addEventListener('wheel',e=>{
- if(!e.ctrlKey) return; e.preventDefault();
- let delta=e.deltaY>0?0.9:1.1; zoomScale=Math.max(0.4,Math.min(4,zoomScale*delta));
- getCurSlide().zoom=zoomScale; scheduleRedraw();
-},{passive:false});
-let isPanning=false, panStart=null;
-viewportLock.addEventListener('pointerdown',e=>{ if(curTool!=='hand') return; isPanning=true; panStart={x:e.clientX-panX,y:e.clientY-panY}; });
-viewportLock.addEventListener('pointermove',e=>{ if(!isPanning) return; panX=e.clientX-panStart.x; panY=e.clientY-panStart.y; getCurSlide().panX=panX; getCurSlide().panY=panY; scheduleRedraw(); });
-viewportLock.addEventListener('pointerup',()=>isPanning=false);
+/* 4. AUTOMATED CLOUD-DRIVE RECORDING SYSTEM */
+let driveRecorder=null, driveChunks=[], isDriveRecording=false, driveToken=null, tokenClient=null;
+const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // Replace with your OAuth Client ID
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-/* Browser Tool */
-function openBrowser(){ document.getElementById('browserBox').style.display='flex'; }
-function closeBrowser(){ document.getElementById('browserBox').style.display='none'; broadcast({type:'browserClose'}); }
-function loadBrowser(){ let url=document.getElementById('browserUrl').value; if(!url.startsWith('http')) url='https://'+url; document.getElementById('browserFrame').src=url; broadcast({type:'browserOpen',url}); }
-
-/* Video Ordering + Permissions + Session Lifecycle */
-let myPeer=null, myStream=null, dataConns=[], teacherId='tutor-mohan-'+room, participants=[];
-function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o);}catch{} }); }
-function handleData(msg){
- if(msg.type==='draw'){ slides[msg.slide]?.strokes.push(msg.data); if(msg.slide===curSlideIdx) scheduleRedraw(); }
- else if(msg.type==='text'){ slides[msg.slide]?.texts.push(msg.data); if(msg.slide===curSlideIdx) scheduleRedraw(); }
- else if(msg.type==='erasePoint'){ let s=slides[msg.slide]; if(s) s.strokes=s.strokes.filter(st=>Math.hypot(st.nx1-msg.pos.x,st.ny1-msg.pos.y)>0.02); if(msg.slide===curSlideIdx) scheduleRedraw(); }
- else if(msg.type==='eraseStroke'){ let s=slides[msg.slide]; if(s && s.strokes[msg.idx]) s.strokes.splice(msg.idx,1); if(msg.slide===curSlideIdx) scheduleRedraw(); }
- else if(msg.type==='clear'){ if(slides[msg.slide]){ slides[msg.slide].strokes=[]; slides[msg.slide].texts=[]; if(msg.slide===curSlideIdx) scheduleRedraw(); } }
- else if(msg.type==='switchSlide'){ curSlideIdx=msg.idx; zoomScale=slides[curSlideIdx].zoom; panX=slides[curSlideIdx].panX; panY=slides[curSlideIdx].panY; redrawAll(); }
- else if(msg.type==='newSlides'){ slides=msg.slides; redrawAll(); }
- else if(msg.type==='newDoc'){ slides.push(msg.slide); redrawAll(); }
- else if(msg.type==='browserOpen'){ document.getElementById('browserBox').style.display='flex'; document.getElementById('browserFrame').src=msg.url; }
- else if(msg.type==='browserClose'){ document.getElementById('browserBox').style.display='none'; }
- else if(msg.type==='endClass'){ alert('Teacher ended class'); location.reload(); }
- else if(msg.type==='perms'){ updatePermsUI(msg.perms); }
+function initGDrive(){
+ tokenClient = google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{ driveToken=resp.access_token; startDriveCapture(); }});
+}
+function toggleDriveRecording(){
+ if(!isDriveRecording){
+   if(!tokenClient) initGDrive();
+   if(!driveToken){ tokenClient.requestAccessToken(); return; }
+   startDriveCapture();
+ } else { stopDriveCapture(); }
+}
+function startDriveCapture(){
+ isDriveRecording=true; driveChunks=[];
+ document.getElementById('recBtn').textContent='■ Stop & Upload to Drive'; document.getElementById('recBtn').classList.add('danger');
+ // Automated Capture Pipeline - bundle canvas frames + audio tracks
+ let canvasStream = drawCanvas.captureStream(30);
+ let docStream = docCanvas.captureStream(30);
+ let combined = new MediaStream([...canvasStream.getVideoTracks(),...docStream.getVideoTracks()]);
+ if(myStream){ myStream.getAudioTracks().forEach(t=>combined.addTrack(t)); }
+ driveRecorder = new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp9'});
+ driveRecorder.ondataavailable=e=>{ if(e.data.size>0) driveChunks.push(e.data); };
+ driveRecorder.onstop=async ()=>{
+   let blob=new Blob(driveChunks,{type:'video/webm'});
+   await uploadToDrive(blob);
+ };
+ driveRecorder.start(100);
+ log('Drive Recording: Capture pipeline started - canvas + audio bundled');
+}
+function stopDriveCapture(){
+ isDriveRecording=false; document.getElementById('recBtn').textContent='● Record to Drive'; document.getElementById('recBtn').classList.remove('danger');
+ if(driveRecorder) driveRecorder.stop();
+}
+async function uploadToDrive(blob){
+ log('Drive: Converting bundle & pushing to Google Drive...');
+ let metadata={name:`tutorMohan-Class-${room}-${new Date().toISOString()}.webm`,mimeType:'video/webm'};
+ let form=new FormData(); form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'})); form.append('file',blob);
+ try{
+   let res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+     method:'POST',headers:{'Authorization':'Bearer '+driveToken},body:form
+   });
+   let json=await res.json();
+   if(json.id){ log(`Drive Upload Complete: File ID ${json.id} - https://drive.google.com/file/d/${json.id}/view`); alert(`✅ Class recording auto-uploaded to Drive!\nFile: ${metadata.name}\nLink: https://drive.google.com/file/d/${json.id}/view`); }
+   else { log('Drive Upload Failed: '+JSON.stringify(json)); alert('Drive upload failed - check OAuth Client ID'); }
+ } catch(err){ log('Drive Upload Error: '+err); }
 }
 
-function addVideo(id,stream,label,isTeacherTile){
+/* Peer - Video ordering Teacher top */
+let myPeer=null,myStream=null,dataConns=[],teacherId='tutor-mohan-'+room;
+function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o);}catch{} }); }
+function handleData(m){
+ if(m.type==='draw'){ slides[m.slide]?.strokes.push(m.data); if(m.slide===curSlideIdx) scheduleRedraw(); }
+ else if(m.type==='text'){ slides[m.slide]?.texts.push(m.data); if(m.slide===curSlideIdx) scheduleRedraw(); }
+ else if(m.type==='erasePoint'){ let s=slides[m.slide]; if(s) s.strokes=s.strokes.filter(st=>Math.hypot(st.nx1-m.pos.x,st.ny1-m.pos.y)>0.02); if(m.slide===curSlideIdx) scheduleRedraw(); }
+ else if(m.type==='eraseStroke'){ let s=slides[m.slide]; if(s && s.strokes[m.idx]) s.strokes.splice(m.idx,1); if(m.slide===curSlideIdx) scheduleRedraw(); }
+ else if(m.type==='clear'){ if(slides[m.slide]){ slides[m.slide].strokes=[]; slides[m.slide].texts=[]; if(m.slide===curSlideIdx) scheduleRedraw(); } }
+ else if(m.type==='switchSlide'){ curSlideIdx=m.idx; zoomScale=slides[curSlideIdx].zoom; panX=slides[curSlideIdx].panX; panY=slides[curSlideIdx].panY; scheduleRedraw(); }
+ else if(m.type==='newSlides'){ slides=m.slides; scheduleRedraw(); }
+ else if(m.type==='browserOpen'){ document.getElementById('browserBox').style.display='flex'; document.getElementById('browserFrame').src=m.url; }
+ else if(m.type==='browserClose'){ document.getElementById('browserBox').style.display='none'; }
+ else if(m.type==='endClass'){ location.reload(); }
+}
+function addVideo(id,stream,label,isTeacher){
  let grid=document.getElementById('vcGrid'); let ex=document.getElementById('v-'+id); if(ex) ex.remove();
- let card=document.createElement('div'); card.className='vCard'+(isTeacherTile?' teacher':''); card.id='v-'+id;
+ let card=document.createElement('div'); card.className='vCard'+(isTeacher?' teacher':''); card.id='v-'+id;
  let v=document.createElement('video'); v.srcObject=stream; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play();
  let meta=document.createElement('div'); meta.className='vMeta'; meta.textContent=label;
  card.appendChild(v); card.appendChild(meta); grid.appendChild(card);
- // Speaking detection for green outline
  try{ let ac=new (window.AudioContext||window.webkitAudioContext)(); let src=ac.createMediaStreamSource(stream); let an=ac.createAnalyser(); src.connect(an); setInterval(()=>{ let d=new Uint8Array(an.frequencyBinCount); an.getByteFrequencyData(d); let avg=d.reduce((a,b)=>a+b,0)/d.length; card.classList.toggle('speaking',avg>22); },300);}catch{}
- participants.push(id); updatePartCount();
+ document.getElementById('partCount').textContent=document.querySelectorAll('.vCard').length;
 }
-function updatePartCount(){ document.getElementById('partCount').textContent=document.querySelectorAll('.vCard').length; }
-
-async function createTeacherPeer(){
- myPeer=new Peer(teacherId);
- myPeer.on('open',()=>{ document.getElementById('status').textContent='🟢 TEACHER LIVE - '+room; });
- myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addVideo(call.peer,s,'Student',false)); });
- myPeer.on('connection',conn=>{
-   dataConns.push(conn); updatePartCount();
-   conn.on('data',handleData);
-   conn.on('open',()=>{ conn.send({type:'newSlides',slides}); conn.send({type:'perms',perms}); });
- });
-}
-async function initMedia(){
- let grid=document.getElementById('vcGrid'); grid.innerHTML='';
- try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch{ alert('Allow camera/mic'); return; }
- addVideo('me',myStream,isTeacher?'Teacher (You)':'Student (You)',isTeacher);
- if(isTeacher) await createTeacherPeer();
- else { let sid='stu-'+Math.random().toString(36).slice(2,5); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(callTeacher,600)); }
-}
-function callTeacher(){
- let call=myPeer.call(teacherId,myStream); if(!call){ document.getElementById('status').textContent='⏳ Waiting for Teacher...'; setTimeout(callTeacher,2500); return; }
- call.on('stream',s=>addVideo('teacher',s,'Teacher',true));
- let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); document.getElementById('status').textContent='🟢 BOARD LINKED - Synced'; }); conn.on('data',handleData);
-}
-function handleClassBtn(){
- let tx=document.getElementById('clsTx').textContent;
- if(tx.includes('Start')||tx.includes('Join')){
-   document.getElementById('clsTx').textContent=isTeacher?'End Class':'Leave'; document.getElementById('clsBtn').classList.add('danger'); initMedia();
- } else {
-   if(isTeacher){ broadcast({type:'endClass'}); } if(myStream) myStream.getTracks().forEach(t=>t.stop()); if(myPeer) myPeer.destroy(); location.reload();
- }
-}
-function openParticipants(){ document.getElementById('partModal').classList.add('show'); }
-function closeParticipants(){ document.getElementById('partModal').classList.remove('show'); }
-function toggleRec(){ document.getElementById('recBtn').textContent='● Recording...'; }
-let perms={mic:true,cam:true,write:false,screen:false};
-function updatePermsUI(p){ perms=p; }
-
-resizeCanvases(); selectTool('pencil'); log('System ready - Fixed viewport, relative coordinate-locked rendering, multi-slide persistent pipeline active');
-function log(t){ console.log(t); }
+async function createTeacherPeer(){ myPeer=new Peer(teacherId); myPeer.on('open',()=>{ document.getElementById('status').textContent='🟢 TEACHER LIVE'; }); myPeer.on('call',c=>{ c.answer(myStream); c.on('stream',s=>addVideo(c.peer,s,'Student',false)); }); myPeer.on('connection',conn=>{ dataConns.push(conn); conn.on('data',handleData); conn.on('open',()=>{ conn.send({type:'newSlides',slides}); }); }); }
+async function initMedia(){ let g=document.getElementById('vcGrid'); g.innerHTML=''; try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch{ alert('Allow cam/mic'); return; } addVideo('me',myStream,isTeacher?'Teacher':'Student',isTeacher); if(isTeacher) await createTeacherPeer(); else { let sid='stu-'+Math.random().toString(36).slice(2,5); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(()=>{ let call=myPeer.call(teacherId,myStream); call.on('stream',s=>addVideo('teacher',s,'Teacher',true)); let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); document.getElementById('status').textContent='🟢 LINKED'; }); conn.on('data',handleData); },600)); } }
+function handleClassBtn(){ let tx=document.getElementById('clsTx').textContent; if(tx.includes('Start')||tx.includes('Join')){ document.getElementById('clsTx').textContent=isTeacher?'End Class':'Leave'; document.getElementById('clsBtn').classList.add('danger'); initMedia(); } else { if(isTeacher){ broadcast({type:'endClass'}); if(isDriveRecording) stopDriveCapture(); } if(myStream) myStream.getTracks().forEach(t=>t.stop()); if(myPeer) myPeer.destroy(); location.reload(); } }
+function openParticipants(){ document.getElementById('partModal').classList.add('show'); } function closeParticipants(){ document.getElementById('partModal').classList.remove('show'); }
+resize(); selectTool('pencil'); initGDrive();
+function log(t){ console.log(t); let el=document.getElementById('status'); if(el) el.textContent=t.slice(0,60); }
 </script></body></html>
