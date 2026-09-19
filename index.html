@@ -1,196 +1,276 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tutor Mohan - Thin Toolbar</title>
+<title>tutor Mohan - Live Class</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#fff;font-family:Arial;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.top{height:52px;background:#020617;border-bottom:2px solid #22c55e;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
-.logo{width:32px;height:32px;background:#22c55e;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
-.main{flex:1;display:flex;overflow:hidden}.left{flex:1;position:relative;background:#525659;overflow:hidden}
-.wrap{width:100%;height:100%;position:relative;overflow:auto;display:flex;justify-content:center;padding:10px}
-#pdfCanvas{position:absolute;box-shadow:0 0 12px #000;width:1000px;height:700px} #board{position:absolute;z-index:2;width:1000px;height:700px;touch-action:none}
-.right{width:340px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:8px;gap:8px}
-#vcBox{height:180px;background:#000;border:2px solid #22c55e;border-radius:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px} video{width:100%;height:100%;object-fit:cover;background:#111}
-#status{padding:7px;border-radius:8px;background:#020617;border:1px solid #22c55e;font-size:11px}
-.btn{padding:6px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#fff;font-weight:700;cursor:pointer;font-size:11px}
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.top{height:58px;background:#ffffff;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:100}
+.logoText{line-height:0.85}.logoText.t1{color:#0f2142;font-weight:900;font-size:26px;letter-spacing:-1px;font-family:Arial Black,Arial}.logoText.t2{color:#ff5e1a;font-weight:900;font-size:30px;letter-spacing:-1px;margin-top:-2px;font-family:Arial Black,Arial}
+.main{flex:1;display:flex;overflow:hidden}
+.left{flex:1;position:relative;background:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px;overflow:hidden}
+.boardWrap{position:relative;width:1000px;height:700px;background:#fff;border:4px solid #0f172a;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);overflow:hidden;flex-shrink:0}
+#pdfCanvas{position:absolute;left:0;top:0;width:1000px;height:700px} #board{position:absolute;left:0;top:0;width:1000px;height:700px;touch-action:none;z-index:2}
+.right{width:360px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:8px;gap:8px;color:#fff}
+#vcBox{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;background:#020617;border-radius:12px;border:1px solid #1e293b;min-height:180px}
+.vTile{position:relative;background:#111;border-radius:10px;overflow:hidden;border:2px solid transparent;height:110px}
+.vTile.speaking{border-color:#22c55e;box-shadow:0 0 12px #22c55e}
+.vTile video{width:100%;height:100%;object-fit:cover}
+.vLabel{position:absolute;bottom:2px;left:4px;font-size:9px;background:rgba(0,0,0,.6);padding:2px 5px;border-radius:4px;color:#fff}
+.vHover{position:absolute;top:4px;right:4px;display:none;gap:4px}.vTile:hover.vHover{display:flex}
+#status{padding:8px;border-radius:8px;background:#020617;border:1px solid #22c55e;font-size:11px;color:#22c55e}
+.btn{padding:7px 12px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff;font-weight:700;cursor:pointer;font-size:11px}
+.slideStrip{height:62px;background:#020617;border-radius:10px;border:1px solid #1e293b;display:flex;gap:8px;align-items:center;padding:6px 8px;overflow-x:auto;overflow-y:hidden}
+.sItem{min-width:78px;height:48px;background:#fff;border:2px solid transparent;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#000;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;position:relative}
+.sItem.active{border-color:#ff5e1a}.sItem span{font-size:8px;color:#666}
 
-/* THIN FLOATING DRAGGABLE TOOLBAR */
-.floatTB{position:absolute;left:12px;top:12px;z-index:30;width:56px;background:#0f172a;border:1px solid #334155;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden;user-select:none;touch-action:none}
-.tbHeader{height:22px;background:#020617;display:flex;align-items:center;justify-content:space-between;padding:0 6px;cursor:grab;font-size:10px;color:#94a3b8}
-.tbHeader:active{cursor:grabbing}
-.tbBody{padding:6px;display:flex;flex-direction:column;gap:6px;align-items:center}
-.tbBody.collapsed{display:none}
-.tBtn{width:40px;height:40px;border-radius:9px;border:2px solid transparent;background:#1e293b;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative}
-.tBtn.on{border-color:#22c55e;background:#22c55e;color:#000}
-.tBtn.small{width:32px;height:32px;font-size:14px}
-.popup{position:absolute;left:58px;top:0;background:#020617;border:1px solid #334155;border-radius:10px;padding:8px;display:none;flex-direction:column;gap:6px;z-index:40;min-width:90px;box-shadow:0 8px 20px #000}
+/* --- THIN FLOATING DRAGGABLE TOOLBAR --- */
+.floatTB{position:absolute;left:18px;top:18px;z-index:50;width:52px;background:#ffffff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
+.tbHead{height:26px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;cursor:grab;font-size:12px}
+.tbBody{padding:8px 6px;display:flex;flex-direction:column;gap:7px;align-items:center;transition:all.2s}
+.tbBody.hide{display:none}
+.tB{width:38px;height:38px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;color:#0f172a;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative}
+.tB.on{border-color:#ff5e1a;background:#ff5e1a;color:#fff}.tB:hover{transform:scale(1.05)}
+.popup{position:absolute;left:54px;top:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:12px;padding:10px;display:none;flex-direction:column;gap:8px;z-index:60;min-width:130px;box-shadow:0 10px 24px rgba(0,0,0,.2)}
 .popup.show{display:flex}
-.popupRow{display:flex;gap:6px;align-items:center}
-.colorDot{width:40px;height:40px;border-radius:50%;border:3px solid #fff;cursor:pointer;box-shadow:0 0 0 2px #000}
-.paletteGrid{display:grid;grid-template-columns:repeat(4,24px);gap:6px}
-.c{width:24px;height:24px;border-radius:50%;border:2px solid #fff;cursor:pointer}
-.thickBtn{width:40px;height:28px;border-radius:6px;background:#1e293b;border:2px solid transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.thickBtn.on{border-color:#22c55e}
-.thickDot{border-radius:50%;background:#fff}
-.toolbarDisabled{opacity:.2;pointer-events:none}
-.slideBar{display:flex;gap:4px;overflow:auto;background:#020617;padding:4px;border-radius:6px}.slideThumb{width:56px;height:38px;background:#fff;border:2px solid transparent;border-radius:4px;flex-shrink:0}.slideThumb.active{border-color:#22c55e}
-.cursor-pen{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><text y="20" font-size="20">✏️</text></svg>') 0 24,crosshair}
-.cursor-eraser{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><text y="20" font-size="20">🧹</text></svg>') 12 12,cell}
-.cursor-hand{cursor:grab}.cursor-hand:active{cursor:grabbing}
+.cDot{width:38px;height:38px;border-radius:50%;border:3px solid #0f172a;cursor:pointer}
+.palette{display:grid;grid-template-columns:repeat(4,26px);gap:6px}
+.col{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;cursor:pointer}
+.thick{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:#f1f5f9;border:2px solid transparent;cursor:pointer;width:100%}
+.thick.on{border-color:#ff5e1a;background:#fff7ed}
+.dot{border-radius:50%;background:#0f172a}
+.toolbarDisabled{opacity:.25;pointer-events:none}
+#pdfFooter{display:none;position:absolute;bottom:0;left:0;right:0;background:#ffffff;border-top:2px solid #0f172a;padding:8px;justify-content:center;gap:8px;z-index:30;border-radius:0 0 8px 8px}
+#pdfFooter.show{display:flex}
+.cursor-pen{cursor:crosshair}.cursor-eraser{cursor:cell}.cursor-hand{cursor:grab}.cursor-text{cursor:text}
 </style></head><body>
-<div class="top"><div style="display:flex;align-items:center;gap:8px"><div class="logo">M</div><div style="font-weight:900;font-size:13px">TUTOR MOHAN</div><div id="roomLabel" style="background:#1e293b;padding:3px 8px;border-radius:20px;font-size:10px"></div></div><button id="clsBtn" class="btn" style="background:#22c55e;color:#000" onclick="togCls()"><span id="clsTx">Start</span></button></div>
-<div class="main"><div class="left"><div class="wrap" id="wrap"><canvas id="pdfCanvas"></canvas><canvas id="board"></canvas>
+<div class="top">
+<div style="display:flex;align-items:center;gap:12px">
+<div class="logoText"><div class="t1">tutor</div><div class="t2">Mohan</div></div>
+<div id="roomLabel" style="background:#f1f5f9;padding:5px 10px;border-radius:20px;font-size:11px;border:1px solid #e2e8f0"></div>
+<div style="font-size:10px;color:#64748b">Fixed Slide: 1000x700</div>
+</div>
+<div style="display:flex;gap:6px;align-items:center">
+<button class="btn" onclick="toggleParticipants()" style="background:#fff;color:#000;border:1px solid #cbd5e1">👥 <span id="partCount">1</span> Participants</button>
+<button class="btn" id="micBtn" onclick="togMic()">🎤 Mic</button>
+<button class="btn" id="camBtn" onclick="togCam()">📷 Cam</button>
+<button class="btn" id="recBtn" onclick="toggleRec()" style="background:#fff;color:#ef4444">● Rec</button>
+<button id="clsBtn" class="btn" style="background:#ff5e1a;color:#fff;border:none" onclick="togCls()"><span id="clsTx">Start Class</span></button>
+</div>
+</div>
 
-<!-- THIN FLOATING TOOLBAR -->
+<div class="main">
+<div class="left">
+<div class="boardWrap" id="boardWrap"><canvas id="pdfCanvas" width="1000" height="700"></canvas><canvas id="board" width="1000" height="700"></canvas>
+
+<!-- FLOATING TOOLBAR -->
 <div class="floatTB" id="floatTB">
-<div class="tbHeader" id="tbDrag">⋮⋮ <span id="collapseBtn" style="cursor:pointer" onclick="toggleCollapse()">─</span></div>
+<div class="tbHead" id="dragHead"><span>⋮⋮</span><span id="collapseBtn" onclick="toggleCollapse()" style="cursor:pointer;padding:2px 6px;background:#1e293b;border-radius:4px">─</span></div>
 <div class="tbBody" id="tbBody">
-<!-- 1. HAND -->
-<button class="tBtn" data-t="hand" onclick="setTool('hand')" title="Hand / Pan">✋</button>
-<!-- 2. PENCIL + POPUP -->
-<div style="position:relative">
-<button class="tBtn on" data-t="pen" id="penMainBtn" onclick="togglePenPopup()" title="Pencil">✏️</button>
-<div class="popup" id="penPopup">
-<div style="font-size:10px;color:#94a3b8">PENCIL TYPE</div>
-<button class="tBtn small on" data-pt="pen" onclick="setPenType('pen')">✏️ Pencil</button>
-<button class="tBtn small" data-pt="highlighter" onclick="setPenType('highlighter')" style="background:#fef08a;color:#000">🖍️ Highlighter</button>
-<div style="height:1px;background:#334155;margin:4px 0"></div>
-<div style="font-size:10px;color:#94a3b8">THICKNESS - Proper</div>
-<div style="display:flex;flex-direction:column;gap:4px">
-<button class="thickBtn" onclick="setSize(3)"><div class="thickDot" style="width:3px;height:3px"></div></button>
-<button class="thickBtn on" onclick="setSize(6)"><div class="thickDot" style="width:6px;height:6px"></div></button>
-<button class="thickBtn" onclick="setSize(10)"><div class="thickDot" style="width:10px;height:10px"></div></button>
-<button class="thickBtn" onclick="setSize(16)"><div class="thickDot" style="width:16px;height:16px"></div></button>
+<button class="tB" data-t="hand" onclick="setTool('hand')" title="Hand - Pan">✋</button>
+
+<div style="position:relative;width:100%;display:flex;justify-content:center">
+<button class="tB on" data-t="pen" id="penBtn" onclick="togglePop('penPop')" title="Pencil">✏️</button>
+<div class="popup" id="penPop">
+<div style="font-size:10px;font-weight:700;color:#64748b">PENCIL TYPE</div>
+<button class="thick on" data-pt="pen" onclick="setPenType('pen')"><span style="font-size:14px">✏️</span> Pencil</button>
+<button class="thick" data-pt="highlighter" onclick="setPenType('highlighter')"><span style="font-size:14px">🖍️</span> Highlighter (Transparent)</button>
+<div style="height:1px;background:#e2e8f0"></div>
+<div style="font-size:10px;font-weight:700;color:#64748b">THICKNESS</div>
+<button class="thick" onclick="setSize(3)"><div class="dot" style="width:3px;height:3px"></div> Thin 3px</button>
+<button class="thick on" onclick="setSize(6)"><div class="dot" style="width:6px;height:6px"></div> Medium 6px</button>
+<button class="thick" onclick="setSize(10)"><div class="dot" style="width:10px;height:10px"></div> Bold 10px</button>
+<button class="thick" onclick="setSize(16)"><div class="dot" style="width:16px;height:16px"></div> Extra Bold 16px</button>
+</div>
+</div>
+
+<div style="position:relative;width:100%;display:flex;justify-content:center">
+<button class="tB" data-t="text" onclick="setTool('text')" title="Text Typing">T</button>
+</div>
+
+<div style="position:relative;width:100%;display:flex;justify-content:center">
+<button class="tB" data-t="shape" onclick="togglePop('shapePop')" title="Shapes">⬜</button>
+<div class="popup" id="shapePop" style="min-width:160px">
+<div style="font-size:10px;font-weight:700;color:#64748b">MATHS SHAPES</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+<button class="tB" onclick="setShape('rect')">⬜</button>
+<button class="tB" onclick="setShape('circle')">⭕</button>
+<button class="tB" onclick="setShape('line')">📏</button>
+<button class="tB" onclick="setShape('arrow')">➡️</button>
+<button class="tB" onclick="setShape('triangle')">🔺</button>
+<button class="tB" onclick="setShape('axis')">📈 Axis</button>
 </div>
 </div>
 </div>
-<!-- 3. SHAPES + POPUP -->
-<div style="position:relative">
-<button class="tBtn" data-t="shape" id="shapeMainBtn" onclick="toggleShapePopup()" title="Shapes">⬜</button>
-<div class="popup" id="shapePopup" style="min-width:120px">
-<div style="font-size:10px;color:#94a3b8">MATH SHAPES</div>
-<div class="paletteGrid">
-<button class="tBtn small" onclick="setTool('rect')" title="Rectangle">⬜</button>
-<button class="tBtn small" onclick="setTool('circle')" title="Circle">⭕</button>
-<button class="tBtn small" onclick="setTool('line')" title="Line">📏</button>
-<button class="tBtn small" onclick="setTool('arrow')" title="Arrow">➡️</button>
-<button class="tBtn small" onclick="setTool('triangle')" title="Triangle">🔺</button>
-<button class="tBtn small" onclick="setTool('axis')" title="Axis / Graph">📈</button>
-<button class="tBtn small" onclick="setTool('bracket')" title="Bracket">()</button>
+
+<div style="position:relative;width:100%;display:flex;justify-content:center">
+<button class="tB" data-t="eraser" onclick="togglePop('eraserPop')" title="Eraser">🧹</button>
+<div class="popup" id="eraserPop">
+<div style="font-size:10px;font-weight:700;color:#64748b">ERASER TYPES</div>
+<button class="thick on" data-et="pixel" onclick="setEraser('pixel')">🧹 Part Erase - Only touched part</button>
+<button class="thick" data-et="stroke" onclick="setEraser('stroke')">🗑️ Stroke Erase - Full stroke</button>
+<button class="thick" onclick="clearCurrent(true)" style="background:#fef2f2;border-color:#fecaca">🧼 Clear Full Page</button>
 </div>
 </div>
-</div>
-<!-- 4. ERASER + POPUP -->
-<div style="position:relative">
-<button class="tBtn" data-t="eraser" id="eraserMainBtn" onclick="toggleEraserPopup()" title="Eraser">🧹</button>
-<div class="popup" id="eraserPopup">
-<div style="font-size:10px;color:#94a3b8">ERASER TYPE</div>
-<button class="tBtn small on" data-et="pixel" onclick="setEraserType('pixel')" title="Part Erase">🧹 Part Erase</button>
-<button class="tBtn small" data-et="stroke" onclick="setEraserType('stroke')" title="Full Stroke">🗑️ Stroke Erase</button>
-<button class="tBtn small" onclick="clearCurrent(true)" title="Clear Page" style="background:#ef4444">🧼 Clear Page</button>
-</div>
-</div>
-<!-- 5. COLOR -->
-<div style="position:relative">
-<div class="colorDot" id="curColorDot" style="background:#000000" onclick="toggleColorPopup()" title="Color"></div>
-<div class="popup" id="colorPopup" style="left:50px">
-<div style="font-size:10px;color:#94a3b8">12 COLORS</div>
-<div class="paletteGrid" id="pal"></div>
-</div>
-</div>
-<div style="height:1px;background:#334155;width:100%"></div>
-<button class="tBtn small teacherOnly" onclick="document.getElementById('pdfIn').click()" title="PDF">📄</button>
-<button class="tBtn small teacherOnly" onclick="switchToWhiteboard()" title="White">⬜</button>
+
+<div style="position:relative;width:100%;display:flex;justify-content:center">
+<div class="cDot" id="curColorDot" style="background:#000000" onclick="togglePop('colorPop')" title="Color - Click for palette"></div>
+<div class="popup" id="colorPop">
+<div style="font-size:10px;font-weight:700;color:#64748b">12 COLORS - Fixed Palette</div>
+<div class="palette" id="pal"></div>
 </div>
 </div>
 
 </div>
-<div id="pdfFooter" style="display:none;position:absolute;bottom:0;left:0;right:0;background:#020617;border-top:1px solid #334155;padding:6px;justify-content:center;gap:6px;z-index:20"><button class="btn" onclick="zoomPDF(0.2)">Zoom+</button><button class="btn" onclick="zoomPDF(-0.2)">Zoom-</button><button class="btn" onclick="changePage(-1)">◀</button><span id="pgInfo" style="font-size:11px">Whiteboard</span><button class="btn" onclick="changePage(1)">▶</button></div>
 </div>
-<div class="right"><div id="status">⚫ OFFLINE</div><div id="vcBox"><div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#666;font-size:11px">Video</div></div>
-<div style="display:flex;gap:4px"><button class="btn" style="flex:1" onclick="togMic()">Mic</button><button class="btn" style="flex:1" onclick="togCam()">Cam</button><button class="btn" style="flex:1" onclick="retryConnect()">Reconnect</button></div>
-<div id="permPanel" style="background:#020617;border:1px solid #334155;border-radius:8px;padding:8px"><b style="font-size:11px">Teacher Controls</b><br><label style="font-size:11px"><input type="checkbox" id="pWrite"> Allow Student Write</label><br><button class="btn" style="width:100%;margin-top:6px;background:#ef4444" onclick="endClassForAll()">End For All</button><div style="font-size:10px;margin-top:4px;color:#22c55e">Boards: <span id="connCount">0</span></div></div>
-<div id="log" style="height:70px;background:#020617;border:1px solid #1e293b;border-radius:6px;padding:4px;overflow:auto;font-size:10px"></div>
-</div></div>
+
+<div id="pdfFooter"><span style="font-size:11px;font-weight:700">PDF Controls:</span><button class="btn" onclick="zoomPDF(0.2)">Zoom+</button><button class="btn" onclick="zoomPDF(-0.2)">Zoom-</button><button class="btn" onclick="changePage(-1)">◀ Prev</button><span id="pgInfo" style="font-size:11px;background:#f1f5f9;padding:4px 8px;border-radius:6px">Whiteboard</span><button class="btn" onclick="changePage(1)">Next ▶</button><button class="btn" style="background:#ff5e1a;color:#fff" onclick="switchToWhiteboard()">Back to Whiteboard</button></div>
+</div>
+
+<!-- SLIDES FIXED -->
+<div style="width:1000px;margin-top:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+<div style="font-size:12px;font-weight:800;color:#0f172a">📑 Slides (Fixed Size - Scroll X only)</div>
+<div style="display:flex;gap:6px" class="teacherOnly"><button class="btn" onclick="addNewSlide('white')">+ White</button><button class="btn" onclick="addNewSlide('ruled')">+ Ruled</button><button class="btn" onclick="addNewSlide('graph')">+ Graph</button><button class="btn" onclick="document.getElementById('pdfIn').click()">+ PDF Slide</button></div>
+</div>
+<div class="slideStrip" id="slideStrip"></div>
+</div>
+</div>
+
+<div class="right">
+<div id="status">⚫ OFFLINE - Teacher Start First</div>
+<div id="vcBox"></div>
+<div style="display:flex;gap:6px"><button class="btn" style="flex:1" onclick="retryConnect()">🔄 Reconnect</button><button class="btn" style="flex:1;background:#ff5e1a;color:#fff" onclick="endClassForAll()">End</button></div>
+<div id="permPanel" style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:10px"><b style="font-size:11px">👨‍🏫 Teacher Authority (Only Teacher Sees)</b><br><label style="font-size:11px"><input type="checkbox" id="pWrite"> Allow Student Write</label><br><label style="font-size:11px"><input type="checkbox" id="pPdf"> Allow Student PDF Upload</label><br><div style="font-size:10px;margin-top:6px;color:#22c55e">Boards connected: <span id="connCount">0</span> | PDFs shared sync now</div></div>
+<div id="log" style="height:90px;background:#020617;border:1px solid #1e293b;border-radius:8px;padding:6px;overflow:auto;font-size:10px;color:#94a3b8"></div>
+<div id="participantsPanel" style="display:none;background:#fff;color:#000;border-radius:10px;padding:10px;max-height:200px;overflow:auto"><b>Participants</b><div id="partList" style="font-size:11px;margin-top:6px"></div></div>
+</div>
+</div>
 <input type="file" id="pdfIn" accept="application/pdf" hidden>
 <script>
 let room=(new URLSearchParams(location.search).get('room')||'mohan-class-1').toLowerCase().replace(/[^a-z0-9-]/g,'-'); let role=new URLSearchParams(location.search).get('role')||'teacher'; let isTeacher=role==='teacher';
-document.getElementById('roomLabel').textContent=room+' | '+role.toUpperCase();
-if(!isTeacher){ document.getElementById('clsTx').textContent='Join'; document.getElementById('permPanel').style.display='none'; }
-let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d'), board=document.getElementById('board'), ctx=board.getContext('2d'), wrap=document.getElementById('wrap');
+document.getElementById('roomLabel').textContent=room+' | '+role.toUpperCase().replace('TEACHER','Teacher').replace('STUDENT','Student');
+if(!isTeacher){ document.getElementById('clsTx').textContent='Join Class'; document.getElementById('permPanel').style.display='none'; document.querySelectorAll('.teacherOnly').forEach(e=>e.style.display='none'); }
+let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d'), board=document.getElementById('board'), ctx=board.getContext('2d'), wrap=document.getElementById('boardWrap');
 function log(t){ let e=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; e.appendChild(d); e.scrollTop=9999; }
-let palette=['#000000','#ff0000','#00a8ff','#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff','#ff8c00','#00ffff','#a3e635'];
-let curColor='#000000', curSize=6, curTool='pen', penType='pen', eraserType='pixel'; let slides=[{bg:'white',strokes:[],isPdf:false}], curSlide=0, pdfDoc=null, curPdfPage=1, pdfScale=1.2, perms={canWrite:false};
-let pal=document.getElementById('pal'); palette.forEach(c=>{ let d=document.createElement('div'); d.className='c'; d.style.background=c; d.onclick=()=>{ curColor=c; document.getElementById('curColorDot').style.background=c; document.getElementById('colorPopup').classList.remove('show'); log('Color '+c); }; pal.appendChild(d); });
-function setSize(s){ curSize=s; document.querySelectorAll('.thickBtn').forEach(b=>b.classList.remove('on')); event.currentTarget.classList.add('on'); log('Thickness '+s+'px'); }
-function toggleCollapse(){ document.getElementById('tbBody').classList.toggle('collapsed'); }
-function togglePenPopup(){ document.getElementById('penPopup').classList.toggle('show'); document.getElementById('shapePopup').classList.remove('show'); document.getElementById('eraserPopup').classList.remove('show'); document.getElementById('colorPopup').classList.remove('show'); }
-function toggleShapePopup(){ document.getElementById('shapePopup').classList.toggle('show'); document.getElementById('penPopup').classList.remove('show'); document.getElementById('eraserPopup').classList.remove('show'); document.getElementById('colorPopup').classList.remove('show'); }
-function toggleEraserPopup(){ document.getElementById('eraserPopup').classList.toggle('show'); document.getElementById('penPopup').classList.remove('show'); document.getElementById('shapePopup').classList.remove('show'); document.getElementById('colorPopup').classList.remove('show'); }
-function toggleColorPopup(){ document.getElementById('colorPopup').classList.toggle('show'); document.getElementById('penPopup').classList.remove('show'); document.getElementById('shapePopup').classList.remove('show'); document.getElementById('eraserPopup').classList.remove('show'); }
-function setPenType(t){ penType=t; document.querySelectorAll('[data-pt]').forEach(b=>b.classList.remove('on')); document.querySelector('[data-pt="'+t+'"]')?.classList.add('on'); setTool('pen'); document.getElementById('penPopup').classList.remove('show'); log('Pen type '+t); }
-function setEraserType(t){ eraserType=t; document.querySelectorAll('[data-et]').forEach(b=>b.classList.remove('on')); document.querySelector('[data-et="'+t+'"]')?.classList.add('on'); curTool=t==='pixel'?'eraser':'strokeEraser'; setTool(curTool); document.getElementById('eraserPopup').classList.remove('show'); }
-function drawBG(bg){ pdfCtx.fillStyle='#fff'; pdfCtx.fillRect(0,0,1000,700); if(bg==='ruled'){ pdfCtx.strokeStyle='#93c5fd'; for(let y=40;y<700;y+=32){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } } else if(bg==='graph'){ pdfCtx.strokeStyle='#ddd'; for(let x=0;x<1000;x+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(x,0); pdfCtx.lineTo(x,700); pdfCtx.stroke(); } for(let y=0;y<700;y+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } } }
-function redrawAll(){ pdfCanvas.width=1000; pdfCanvas.height=700; board.width=1000; board.height=700; let s=slides[curSlide]; if(!s.isPdf) drawBG(s.bg); ctx.clearRect(0,0,1000,700); s.strokes.forEach(st=>drawStroke(st)); updateLock(); }
-function drawStroke(st){ ctx.save(); ctx.globalAlpha=st.alpha||1; ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; if(st.type==='pen'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='highlighter'){ ctx.globalAlpha=0.4; ctx.lineWidth=st.size*2; ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='rect'){ ctx.strokeRect(st.x1,st.y1,st.x2-st.x1,st.y2-st.y1);} else if(st.type==='circle'){ let r=Math.hypot(st.x2-st.x1,st.y2-st.y1); ctx.beginPath(); ctx.arc(st.x1,st.y1,r,0,6.28); ctx.stroke(); } else if(st.type==='line'||st.type==='arrow'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='triangle'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.lineTo(st.x1-(st.x2-st.x1),st.y2); ctx.closePath(); ctx.stroke(); } else if(st.type==='axis'){ ctx.beginPath(); ctx.moveTo(500,0); ctx.lineTo(500,700); ctx.moveTo(0,350); ctx.lineTo(1000,350); ctx.stroke(); } ctx.restore(); }
-function switchSlide(i){ curSlide=i; redrawAll(); broadcast({type:'switchSlide',idx:i}); } function addNewSlide(bg){ if(!isTeacher) return; slides.push({bg:bg,strokes:[],isPdf:false}); switchSlide(slides.length-1); broadcast({type:'newSlide',bg:bg}); } function switchToWhiteboard(){ addNewSlide('white'); pdfDoc=null; document.getElementById('pdfFooter').style.display='none'; } function clearCurrent(b){ slides[curSlide].strokes=[]; ctx.clearRect(0,0,1000,700); if(b) broadcast({type:'clear',slide:curSlide}); }
-function setTool(t){
- curTool=t; document.querySelectorAll('.tBtn').forEach(b=>b.classList.remove('on')); if(['pen','highlighter'].includes(t)) document.getElementById('penMainBtn')?.classList.add('on'); else document.querySelector('[data-t="'+t+'"]')?.classList.add('on');
- board.classList.remove('cursor-pen','cursor-eraser','cursor-hand'); if(t==='pen'||t==='highlighter') board.classList.add('cursor-pen'); else if(t==='eraser'||t==='strokeEraser') board.classList.add('cursor-eraser'); else if(t==='hand') board.classList.add('cursor-hand');
- // close popups after shape select
- if(['rect','circle','line','arrow','triangle','axis'].includes(t)){ document.getElementById('shapePopup').classList.remove('show'); }
+let palette=['#000000','#ff0000','#0066ff','#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff','#ff5e1a','#00d2ff','#84cc16'];
+let curColor='#000000', curSize=6, curTool='pen', penType='pen', eraserType='pixel';
+let slides=[{bg:'white',strokes:[],isPdf:false,pdfImage:null}], curSlide=0, pdfDoc=null, curPdfPage=1, pdfScale=1.2, perms={canWrite:false,canPdf:false};
+let pal=document.getElementById('pal'); palette.forEach(c=>{ let d=document.createElement('div'); d.className='col'; d.style.background=c; d.onclick=()=>{ curColor=c; document.getElementById('curColorDot').style.background=c; closeAllPops(); }; pal.appendChild(d); });
+function setSize(s){ curSize=s; document.querySelectorAll('#penPop.thick').forEach((b,i)=>{ if(b.textContent.includes('px')) b.classList.toggle('on', b.textContent.includes(s+'px')); }); log('Size '+s); }
+function closeAllPops(){ document.querySelectorAll('.popup').forEach(p=>p.classList.remove('show')); }
+function togglePop(id){ let p=document.getElementById(id); let was=p.classList.contains('show'); closeAllPops(); if(!was) p.classList.add('show'); }
+function toggleCollapse(){ document.getElementById('tbBody').classList.toggle('hide'); document.getElementById('collapseBtn').textContent=document.getElementById('tbBody').classList.contains('hide')?'□':'─'; }
+function setPenType(t){ penType=t; document.querySelectorAll('[data-pt]').forEach(b=>b.classList.remove('on')); document.querySelector('[data-pt="'+t+'"]')?.classList.add('on'); setTool('pen'); closeAllPops(); }
+function setEraser(t){ eraserType=t; curTool=t==='pixel'?'eraser':'strokeEraser'; document.querySelectorAll('[data-et]').forEach(b=>b.classList.remove('on')); document.querySelector('[data-et="'+t+'"]')?.classList.add('on'); setTool(curTool); closeAllPops(); }
+function setShape(s){ curTool=s; setTool(s); closeAllPops(); }
+function drawBG(bg){ pdfCtx.fillStyle='#fff'; pdfCtx.fillRect(0,0,1000,700); if(bg==='ruled'){ pdfCtx.strokeStyle='#93c5fd'; for(let y=48;y<700;y+=32){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } pdfCtx.strokeStyle='#fca5a5'; pdfCtx.beginPath(); pdfCtx.moveTo(64,0); pdfCtx.lineTo(64,700); pdfCtx.stroke(); } else if(bg==='graph'){ pdfCtx.strokeStyle='#e5e7eb'; for(let x=0;x<1000;x+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(x,0); pdfCtx.lineTo(x,700); pdfCtx.stroke(); } for(let y=0;y<700;y+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } } }
+function redrawAll(){
+ pdfCanvas.width=1000; pdfCanvas.height=700; board.width=1000; board.height=700;
+ let s=slides[curSlide];
+ if(s.pdfImage){ let img=new Image(); img.onload=()=>{ pdfCtx.clearRect(0,0,1000,700); pdfCtx.drawImage(img,0,0,1000,700); drawStrokes(); }; img.src=s.pdfImage; } else { if(!s.isPdf) drawBG(s.bg); else { pdfCtx.clearRect(0,0,1000,700); } drawStrokes(); }
+ renderSlides(); updateLock();
 }
-function updateLock(){ let tb=document.getElementById('floatTB'); if(!isTeacher &&!perms.canWrite){ tb.classList.add('toolbarDisabled'); } else { tb.classList.remove('toolbarDisabled'); } document.getElementById('connCount').textContent=dataConns.length; }
-// DRAGGABLE
-let dragEl=document.getElementById('floatTB'), dragHandle=document.getElementById('tbDrag'), dX=0,dY=0, dragging=false;
-dragHandle.addEventListener('pointerdown',e=>{ dragging=true; dX=e.clientX-dragEl.offsetLeft; dY=e.clientY-dragEl.offsetTop; dragHandle.setPointerCapture(e.pointerId); });
-dragHandle.addEventListener('pointermove',e=>{ if(!dragging) return; dragEl.style.left=(e.clientX-dX)+'px'; dragEl.style.top=(e.clientY-dY)+'px'; });
-dragHandle.addEventListener('pointerup',()=>dragging=false);
+function drawStrokes(){ ctx.clearRect(0,0,1000,700); slides[curSlide].strokes.forEach(st=>drawStroke(st)); }
+function drawStroke(st){ ctx.save(); ctx.globalAlpha=st.type==='highlighter'?0.35:1; ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.lineJoin='round'; if(st.type==='pen'||st.type==='highlighter'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); if(st.type==='highlighter'){ ctx.lineWidth=st.size*2.5; ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } } else if(st.type==='text'){ ctx.font=st.size*4+'px Arial'; ctx.fillStyle=st.color; ctx.fillText(st.text,st.x1,st.y1); } else if(st.type==='rect'){ ctx.strokeRect(st.x1,st.y1,st.x2-st.x1,st.y2-st.y1);} else if(st.type==='circle'){ let r=Math.hypot(st.x2-st.x1,st.y2-st.y1); ctx.beginPath(); ctx.arc(st.x1,st.y1,r,0,6.28); ctx.stroke(); } else if(st.type==='line'||st.type==='arrow'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='triangle'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.lineTo(st.x1-(st.x2-st.x1),st.y2); ctx.closePath(); ctx.stroke(); } else if(st.type==='axis'){ ctx.beginPath(); ctx.moveTo(500,0); ctx.lineTo(500,700); ctx.moveTo(0,350); ctx.lineTo(1000,350); ctx.stroke(); for(let i=0;i<1000;i+=50){ ctx.fillRect(500+i,345,2,10); ctx.fillRect(495,350+i,10,2);} } ctx.restore(); }
+function renderSlides(){ let strip=document.getElementById('slideStrip'); strip.innerHTML=''; slides.forEach((s,i)=>{ let d=document.createElement('div'); d.className='sItem'+(i===curSlide?' active':''); d.innerHTML='<div>Slide '+(i+1)+'</div><span>'+(s.isPdf?'PDF':s.bg)+'</span>'; d.onclick=()=>switchSlide(i); strip.appendChild(d); }); }
+function switchSlide(i){ if(i<0||i>=slides.length) return; curSlide=i; redrawAll(); broadcast({type:'switchSlide',idx:i}); }
+function addNewSlide(bg){ if(!isTeacher &&!perms.canPdf) { alert('Teacher disabled'); return; } slides.push({bg:bg,strokes:[],isPdf:false,pdfImage:null}); switchSlide(slides.length-1); broadcast({type:'newSlide',bg:bg}); }
+function switchToWhiteboard(){ addNewSlide('white'); pdfDoc=null; document.getElementById('pdfFooter').classList.remove('show'); document.getElementById('pgInfo').textContent='Whiteboard'; }
+function clearCurrent(b){ slides[curSlide].strokes=[]; ctx.clearRect(0,0,1000,700); if(b) broadcast({type:'clear',slide:curSlide}); }
+function setTool(t){
+ curTool=t; document.querySelectorAll('.tB').forEach(b=>b.classList.remove('on'));
+ if(t==='pen'||t==='highlighter') document.getElementById('penBtn').classList.add('on'); else document.querySelector('[data-t="'+t+'"]')?.classList.add('on');
+ board.classList.remove('cursor-pen','cursor-eraser','cursor-hand','cursor-text');
+ if(t==='pen'||t==='highlighter') board.classList.add('cursor-pen'); else if(t==='eraser'||t==='strokeEraser') board.classList.add('cursor-eraser'); else if(t==='hand') board.classList.add('cursor-hand'); else if(t==='text') board.classList.add('cursor-text'); else board.style.cursor='crosshair';
+ if(t!=='pen') closeAllPops();
+}
+function updateLock(){ let tb=document.getElementById('floatTB'); if(!isTeacher &&!perms.canWrite) tb.classList.add('toolbarDisabled'); else tb.classList.remove('toolbarDisabled'); document.getElementById('connCount').textContent=dataConns.length; document.getElementById('partCount').textContent=dataConns.length+1; }
+// DRAGGABLE TOOLBAR - FIXED
+let floatTB=document.getElementById('floatTB'), dragHead=document.getElementById('dragHead'), isDrag=false, dOffX=0,dOffY=0;
+dragHead.addEventListener('pointerdown',e=>{ isDrag=true; dOffX=e.clientX-floatTB.offsetLeft; dOffY=e.clientY-floatTB.offsetTop; dragHead.setPointerCapture(e.pointerId); });
+dragHead.addEventListener('pointermove',e=>{ if(!isDrag) return; floatTB.style.left=(e.clientX-dOffX)+'px'; floatTB.style.top=(e.clientY-dOffY)+'px'; });
+dragHead.addEventListener('pointerup',()=>isDrag=false);
 // HAND PANNING
-let isPanning=false, sX,sY, sL,sT;
-wrap.addEventListener('pointerdown',e=>{ if(curTool!=='hand') return; isPanning=true; sX=e.pageX-wrap.offsetLeft; sY=e.pageY-wrap.offsetTop; sL=wrap.scrollLeft; sT=wrap.scrollTop; });
-wrap.addEventListener('pointermove',e=>{ if(!isPanning) return; wrap.scrollLeft=sL-(e.pageX-wrap.offsetLeft-sX); wrap.scrollTop=sT-(e.pageY-wrap.offsetTop-sY); });
-wrap.addEventListener('pointerup',()=>isPanning=false);
-// DRAWING - PenTab Friendly
+let isPanning=false, sX,sY, sL,sT, boardWrap=document.getElementById('boardWrap');
+boardWrap.addEventListener('pointerdown',e=>{ if(curTool!=='hand') return; isPanning=true; sX=e.clientX; sY=e.clientY; sL=boardWrap.scrollLeft; sT=boardWrap.scrollTop; });
+boardWrap.addEventListener('pointermove',e=>{ if(!isPanning) return; boardWrap.scrollLeft=sL-(e.clientX-sX); boardWrap.scrollTop=sT-(e.clientY-sY); });
+boardWrap.addEventListener('pointerup',()=>isPanning=false);
+// DRAWING
 let drawing=false,sx=0,sy=0,lx=0,ly=0;
 board.addEventListener('pointerdown',e=>{
- if(curTool==='hand') return; if(!isTeacher &&!perms.canWrite){ log('Blocked'); return; }
+ if(curTool==='hand') return;
+ if(curTool==='text'){ let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(1000/r.width); let y=(e.clientY-r.top)*(700/r.height); let txt=prompt('Type text:'); if(!txt) return; let st={type:'text',x1:x,y1:y,text:txt,color:curColor,size:curSize,slide:curSlide}; slides[curSlide].strokes.push(st); drawStroke(st); broadcast(st); return; }
+ if(!isTeacher &&!perms.canWrite){ log('Write blocked by teacher'); return; }
  drawing=true; let r=board.getBoundingClientRect(); sx=(e.clientX-r.left)*(1000/r.width); sy=(e.clientY-r.top)*(700/r.height); lx=sx; ly=sy;
 });
 board.addEventListener('pointermove',e=>{
  if(!drawing || curTool==='hand') return; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(1000/r.width); let y=(e.clientY-r.top)*(700/r.height);
- if(curTool==='pen'||penType==='highlighter'&&curTool==='pen'){ let type=penType==='highlighter'?'highlighter':'pen'; let st={type:type,x1:lx,y1:ly,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide, alpha: type==='highlighter'?0.4:1}; drawStroke(st); slides[curSlide].strokes.push(st); broadcast(st); }
- else if(curTool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,18,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; broadcast({type:'erasePixel',x,y,slide:curSlide}); }
+ if(curTool==='pen'){ let st={type:penType,x1:lx,y1:ly,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; drawStroke(st); slides[curSlide].strokes.push(st); broadcast(st); }
+ else if(curTool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,20,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; broadcast({type:'erasePixel',x,y,slide:curSlide}); }
  lx=x; ly=y;
 });
 board.addEventListener('pointerup',e=>{
  if(!drawing) return; drawing=false; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(1000/r.width); let y=(e.clientY-r.top)*(700/r.height);
  if(['rect','circle','line','arrow','triangle','axis'].includes(curTool)){ let st={type:curTool,x1:sx,y1:sy,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; slides[curSlide].strokes.push(st); redrawAll(); broadcast(st); }
- else if(curTool==='strokeEraser'){ let s=slides[curSlide].strokes; for(let i=s.length-1;i>=0;i--){ if(Math.hypot(s[i].x1-x,s[i].y1-y)<60){ s.splice(i,1); break; } } redrawAll(); broadcast({type:'removeLast',slide:curSlide}); }
+ else if(curTool==='strokeEraser'){ let s=slides[curSlide].strokes; for(let i=s.length-1;i>=0;i--){ if(Math.hypot(s[i].x1-x,s[i].y1-y)<50 || Math.hypot(s[i].x2-x,s[i].y2-y)<50){ s.splice(i,1); break; } } redrawAll(); broadcast({type:'removeLast',slide:curSlide}); }
 });
-async function renderPDFPage(){ if(!pdfDoc) return; let page=await pdfDoc.getPage(curPdfPage); let vp=page.getViewport({scale:pdfScale}); pdfCanvas.width=vp.width; pdfCanvas.height=vp.height; board.width=vp.width; board.height=vp.height; pdfCanvas.style.width=vp.width+'px'; board.style.width=vp.width+'px'; pdfCanvas.style.height=vp.height+'px'; board.style.height=vp.height+'px'; await page.render({canvasContext:pdfCtx,viewport:vp}).promise; document.getElementById('pgInfo').textContent='Page '+curPdfPage+'/'+pdfDoc.numPages; ctx.clearRect(0,0,board.width,board.height); slides[curSlide].strokes.forEach(s=>drawStroke(s)); document.getElementById('pdfFooter').style.display='flex'; }
-async function loadPDF(f){ let buf=await f.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPdfPage=1; pdfScale=1.2; slides[curSlide]={bg:'pdf',strokes:[],isPdf:true}; await renderPDFPage(); }
-function zoomPDF(d){ if(!pdfDoc) return; pdfScale=Math.max(0.4,Math.min(3,pdfScale+d)); renderPDFPage(); broadcast({type:'zoom',scale:pdfScale}); }
+// PDF SHARING - FIXED: Shares as image so other side sees
+async function renderPDFPage(){
+ if(!pdfDoc) return; let page=await pdfDoc.getPage(curPdfPage); let vp=page.getViewport({scale:pdfScale}); let tmpC=document.createElement('canvas'); tmpC.width=vp.width; tmpC.height=vp.height; let tmpCtx=tmpC.getContext('2d'); await page.render({canvasContext:tmpCtx,viewport:vp}).promise;
+ // draw to main canvas
+ pdfCanvas.width=1000; pdfCanvas.height=700; pdfCtx.clearRect(0,0,1000,700); pdfCtx.drawImage(tmpC,0,0,1000,700);
+ // save as image for sharing
+ let dataUrl=tmpC.toDataURL('image/jpeg',0.7); slides[curSlide].pdfImage=dataUrl; slides[curSlide].isPdf=true;
+ document.getElementById('pgInfo').textContent='Page '+curPdfPage+'/'+pdfDoc.numPages; document.getElementById('pdfFooter').classList.add('show');
+ drawStrokes();
+ // broadcast PDF image to other peer
+ broadcast({type:'pdfImage',slide:curSlide,image:dataUrl,page:curPdfPage});
+}
+async function loadPDF(f){ if(!isTeacher &&!perms.canPdf){ alert('Teacher disabled PDF'); return; } let buf=await f.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPdfPage=1; pdfScale=1.2; slides[curSlide].isPdf=true; slides[curSlide].pdfImage=null; await renderPDFPage(); log('PDF shared to student'); }
+function zoomPDF(d){ if(!pdfDoc) return; pdfScale=Math.max(0.4,Math.min(3,pdfScale+d)); renderPDFPage(); }
 function changePage(d){ if(!pdfDoc) return; let np=curPdfPage+d; if(np<1||np>pdfDoc.numPages) return; curPdfPage=np; renderPDFPage(); broadcast({type:'pdfPage',page:np}); }
 document.getElementById('pdfIn').addEventListener('change',e=>{ if(e.target.files[0]) loadPDF(e.target.files[0]); });
+// PEER SYNC - SAME LOGIC AS BEFORE
 let myPeer=null,myStream=null,dataConns=[],teacherId='tutor-mohan-'+room;
 function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o);}catch{}}); }
 function handleData(msg){
- if(['pen','highlighter','rect','circle','line','arrow','triangle','axis'].includes(msg.type)){ let idx=msg.slide||0; if(!slides[idx]) slides[idx]={bg:'white',strokes:[],isPdf:false}; slides[idx].strokes.push(msg); if(idx===curSlide){ drawStroke(msg); if(msg.type!=='pen'&&msg.type!=='highlighter') redrawAll(); } }
- else if(msg.type==='erasePixel'){ if(msg.slide!==curSlide) return; ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(msg.x,msg.y,18,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
+ if(['pen','highlighter','rect','circle','line','arrow','triangle','axis','text'].includes(msg.type)){
+   let idx=msg.slide||0; if(!slides[idx]) slides[idx]={bg:'white',strokes:[],isPdf:false,pdfImage:null}; slides[idx].strokes.push(msg); if(idx===curSlide) drawStroke(msg);
+ } else if(msg.type==='pdfImage'){ // NEW - PDF sharing fixed
+   let idx=msg.slide; if(!slides[idx]) slides[idx]={bg:'white',strokes:[],isPdf:true,pdfImage:null}; slides[idx].pdfImage=msg.image; slides[idx].isPdf=true; if(idx===curSlide){ let img=new Image(); img.onload=()=>{ pdfCtx.clearRect(0,0,1000,700); pdfCtx.drawImage(img,0,0,1000,700); drawStrokes(); }; img.src=msg.image; document.getElementById('pdfFooter').classList.add('show'); } log('Received PDF page from teacher');
+ } else if(msg.type==='erasePixel'){ if(msg.slide!==curSlide) return; ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(msg.x,msg.y,20,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
  else if(msg.type==='removeLast'){ if(slides[msg.slide]){ slides[msg.slide].strokes.pop(); if(msg.slide===curSlide) redrawAll(); } }
  else if(msg.type==='clear'){ if(slides[msg.slide]){ slides[msg.slide].strokes=[]; if(msg.slide===curSlide) ctx.clearRect(0,0,1000,700); } }
- else if(msg.type==='newSlide'){ slides.push({bg:msg.bg,strokes:[],isPdf:false}); } else if(msg.type==='switchSlide'){ curSlide=msg.idx; redrawAll(); }
- else if(msg.type==='perms'){ perms=msg.perms; updateLock(); } else if(msg.type==='classEnded'){ location.reload(); } else if(msg.type==='zoom'){ pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); } else if(msg.type==='pdfPage'){ curPdfPage=msg.page; if(pdfDoc) renderPDFPage(); }
+ else if(msg.type==='newSlide'){ slides.push({bg:msg.bg,strokes:[],isPdf:false,pdfImage:null}); renderSlides(); }
+ else if(msg.type==='switchSlide'){ curSlide=msg.idx; redrawAll(); }
+ else if(msg.type==='perms'){ perms=msg.perms; updateLock(); }
+ else if(msg.type==='classEnded'){ location.reload(); }
+ else if(msg.type==='pdfPage'){ curPdfPage=msg.page; if(pdfDoc) renderPDFPage(); }
 }
-function addV(id,s){ let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id)) return; let v=document.createElement('video'); v.id='v-'+id; v.srcObject=s; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play(); box.appendChild(v); }
-async function createTeacherPeer(){ myPeer=new Peer(teacherId); myPeer.on('open',()=>{ log('✅ TEACHER LIVE'); document.getElementById('status').textContent='🟢 TEACHER LIVE - '+room; perms.canWrite=true; updateLock(); }); myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addV(call.peer,s)); }); myPeer.on('connection',conn=>{ dataConns.push(conn); updateLock(); conn.on('data',handleData); conn.on('open',()=>conn.send({type:'perms',perms})); }); myPeer.on('error',e=>{ if(e.type==='unavailable-id') setTimeout(()=>{ myPeer.destroy(); createTeacherPeer(); },2000); }); }
-async function initVC(){ let box=document.getElementById('vcBox'); box.innerHTML=''; try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch{ alert('Allow camera'); return; } addV('me',myStream); if(isTeacher){ await createTeacherPeer(); } else { let sid='stu-'+Math.random().toString(36).slice(2,6); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(callTeacher,800)); } }
-function callTeacher(){ let call=myPeer.call(teacherId,myStream); if(!call){ document.getElementById('status').textContent='⏳ Waiting...'; setTimeout(callTeacher,3000); return; } call.on('stream',s=>{ addV('teacher',s); document.getElementById('status').textContent='🟢 CONNECTED'; }); let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); updateLock(); document.getElementById('status').textContent='🟢 BOARD LINKED'; }); conn.on('data',handleData); }
+function addV(id,s,roleLabel){
+ let box=document.getElementById('vcBox'); let existing=document.getElementById('v-'+id); if(existing) existing.remove();
+ let tile=document.createElement('div'); tile.className='vTile'; tile.id='v-'+id;
+ let v=document.createElement('video'); v.srcObject=s; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play();
+ let label=document.createElement('div'); label.className='vLabel'; label.textContent=roleLabel||id;
+ let hover=document.createElement('div'); hover.className='vHover'; hover.innerHTML='<button class="btn" style="padding:2px 6px">🎤</button>';
+ tile.appendChild(v); tile.appendChild(label); tile.appendChild(hover); box.appendChild(tile);
+ // speaking detection - green outline
+ try{ let ac=new (window.AudioContext||window.webkitAudioContext)(); let src=ac.createMediaStreamSource(s); let analyser=ac.createAnalyser(); src.connect(analyser); setInterval(()=>{ let data=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); let avg=data.reduce((a,b)=>a+b,0)/data.length; tile.classList.toggle('speaking',avg>25); },300); }catch{}
+ updateParticipantList();
+}
+function updateParticipantList(){ let list=document.getElementById('partList'); if(!list) return; list.innerHTML=''; document.querySelectorAll('.vTile').forEach(t=>{ let d=document.createElement('div'); d.textContent='● '+t.querySelector('.vLabel').textContent; list.appendChild(d); }); }
+function toggleParticipants(){ let p=document.getElementById('participantsPanel'); p.style.display=p.style.display==='none'?'block':'none'; }
+async function createTeacherPeer(){ myPeer=new Peer(teacherId); myPeer.on('open',()=>{ log('✅ TEACHER LIVE'); document.getElementById('status').textContent='🟢 TEACHER LIVE - Room '+room; perms.canWrite=true; updateLock(); }); myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addV(call.peer,s,'Student')); }); myPeer.on('connection',conn=>{ dataConns.push(conn); updateLock(); conn.on('data',handleData); conn.on('open',()=>{ conn.send({type:'perms',perms}); if(slides[curSlide].pdfImage) conn.send({type:'pdfImage',slide:curSlide,image:slides[curSlide].pdfImage}); }); }); myPeer.on('error',e=>{ if(e.type==='unavailable-id') setTimeout(()=>{ myPeer.destroy(); createTeacherPeer(); },2000); }); }
+async function initVC(){ let box=document.getElementById('vcBox'); box.innerHTML=''; try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch{ alert('Allow camera/mic'); return; } addV('me',myStream,isTeacher?'Teacher (You)':'Student (You)'); if(isTeacher){ await createTeacherPeer(); } else { let sid='stu-'+Math.random().toString(36).slice(2,6); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(callTeacher,800)); } }
+function callTeacher(){ let call=myPeer.call(teacherId,myStream); if(!call){ document.getElementById('status').textContent='⏳ Waiting for Teacher...'; setTimeout(callTeacher,3000); return; } call.on('stream',s=>{ addV('teacher',s,'Teacher'); document.getElementById('status').textContent='🟢 CONNECTED - Board Linked'; }); let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); updateLock(); document.getElementById('status').textContent='🟢 BOARD LINKED - PDF + Slides sync now'; }); conn.on('data',handleData); }
 function retryConnect(){ if(!isTeacher) callTeacher(); }
-async function togCls(){ let isStart=document.getElementById('clsTx').textContent.includes('Start')||document.getElementById('clsTx').textContent.includes('Join'); if(isStart){ document.getElementById('clsTx').textContent=isTeacher?'End':'Leave'; document.getElementById('clsBtn').style.background='#ef4444'; await initVC(); } else { if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); location.reload(); } }
+async function togCls(){ let isStart=document.getElementById('clsTx').textContent.includes('Start')||document.getElementById('clsTx').textContent.includes('Join'); if(isStart){ document.getElementById('clsTx').textContent=isTeacher?'End Class':'Leave'; document.getElementById('clsBtn').style.background='#0f172a'; await initVC(); } else { endClassForAll(); } }
 function endClassForAll(){ broadcast({type:'classEnded'}); if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); location.reload(); }
-function togMic(){ if(myStream) myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled); } function togCam(){ if(myStream) myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled); }
+function togMic(){ if(myStream) { let t=myStream.getAudioTracks()[0]; if(t) t.enabled=!t.enabled; document.getElementById('micBtn').style.opacity=t.enabled?1:0.4; } }
+function togCam(){ if(myStream) { let t=myStream.getVideoTracks()[0]; if(t) t.enabled=!t.enabled; document.getElementById('camBtn').style.opacity=t.enabled?1:0.4; } }
+function toggleRec(){ log('Recording: Use OBS for now'); }
 document.getElementById('pWrite')?.addEventListener('change',e=>{ perms.canWrite=e.target.checked; broadcast({type:'perms',perms}); updateLock(); });
-redrawAll(); setTool('pen'); log('Thin draggable toolbar ready - Drag from top ⋮⋮ - Click ─ to collapse');
+document.getElementById('pPdf')?.addEventListener('change',e=>{ perms.canPdf=e.target.checked; broadcast({type:'perms',perms}); });
+redrawAll(); setTool('pen'); log('Ready - Fixed 1000x700 - Drag toolbar from ⋮⋮ header - Click ─ to collapse');
+document.addEventListener('click',e=>{ if(!e.target.closest('.floatTB')) closeAllPops(); });
 </script></body></html>
