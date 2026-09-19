@@ -1,64 +1,162 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tutor Mohan - Fixed VC</title>
+<title>Tutor Mohan - Connected Board</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:Arial;height:100vh;display:flex;flex-direction:column}
-.top{height:60px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-.logo{width:38px;height:38px;background:#22c55e;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
-.main{flex:1;display:flex;overflow:hidden}.left{flex:1;display:flex;flex-direction:column}
-#board{flex:1;background:#fff;touch-action:none}
-.toolbar{height:50px;background:#0f172a;display:flex;gap:8px;align-items:center;padding:0 12px}
+body{margin:0;background:#020617;color:#fff;font-family:Arial;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.top{height:58px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.logo{width:36px;height:36px;background:#22c55e;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
+.main{flex:1;display:flex;overflow:hidden}
+.left{flex:1;display:flex;flex-direction:column;position:relative;background:#fff}
+.canvasWrap{flex:1;position:relative;overflow:auto;background:#525659;display:flex;justify-content:center;align-items:flex-start;padding:10px}
+#pdfCanvas{position:absolute;left:0;top:0;box-shadow:0 0 10px #000}
+#board{position:absolute;left:0;top:0;touch-action:none;cursor:crosshair;z-index:2}
+.toolbar{height:56px;background:#0f172a;display:flex;gap:6px;align-items:center;padding:0 10px;z-index:5;flex-wrap:wrap}
 .right{width:360px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:10px;gap:8px}
-#vcBox{height:240px;background:#000;border:2px solid #22c55e;border-radius:14px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;overflow:hidden}
-video{width:100%;height:100%;object-fit:cover;background:#111;border-radius:8px}
-.btn{padding:8px 12px;border-radius:8px;border:0;font-weight:700;cursor:pointer}.ok{background:#22c55e;color:#000}.off{background:#ef4444;color:#fff}.dark{background:#1e293b;color:#fff}
-#status{font-size:11px;padding:6px;background:#020617;border-radius:6px;color:#22c55e}
+#vcBox{height:220px;background:#000;border:2px solid #22c55e;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px}
+video{width:100%;height:100%;object-fit:cover;background:#111;border-radius:6px}
+.btn{padding:7px 10px;border-radius:7px;border:0;font-weight:700;cursor:pointer;font-size:12px}.ok{background:#22c55e;color:#000}.off{background:#ef4444;color:#fff}.dark{background:#1e293b;color:#fff;border:1px solid #334155}
+#status{font-size:11px;padding:5px;background:#020617;border-radius:5px;color:#22c55e}
 </style></head><body>
-<div class="top"><div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div style="font-weight:800">Tutor Mohan</div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:12px"></div></div><button id="clsBtn" class="btn ok" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
-<div class="main"><div class="left"><canvas id="board"></canvas><div class="toolbar"><button class="btn dark" onclick="tool='pen'">Pen</button><button class="btn dark" onclick="tool='eraser'">Eraser</button><input type="color" id="col" value="#000000"><button class="btn dark" onclick="clearBoard()">Clear</button></div></div>
-<div class="right"><div id="status">⚫ OFF - Teacher must START first</div><div id="vcBox"><div style="display:flex;align-items:center;justify-content:center;color:#666;grid-column:1/-1;font-size:12px;text-align:center">Click Start Class<br>Allow Camera</div></div><div style="display:flex;gap:6px"><button class="btn dark" style="flex:1" onclick="togMic()">Mic</button><button class="btn dark" style="flex:1" onclick="togCam()">Cam</button><button class="btn dark" style="flex:1" onclick="retryConnect()">Reconnect</button></div><div id="log" style="height:100px;background:#020617;border:1px solid #1e293b;border-radius:8px;padding:6px;overflow:auto;font-size:11px"></div></div></div>
+<div class="top"><div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div><div style="font-weight:800;font-size:15px">Tutor Mohan</div><div style="font-size:10px;opacity:.6">Connected Board • PDF Annotate</div></div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:11px"></div></div><button id="clsBtn" class="btn ok" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
+
+<div class="main">
+<div class="left">
+<div class="canvasWrap" id="wrap">
+<canvas id="pdfCanvas"></canvas>
+<canvas id="board"></canvas>
+</div>
+<div class="toolbar">
+<button class="btn dark" onclick="setTool('pen')">✏️ Pen</button>
+<button class="btn dark" onclick="setTool('eraser')">🧹 Eraser</button>
+<input type="color" id="col" value="#ff0000" style="width:28px;height:28px">
+<input type="range" id="sz" min="1" max="15" value="3" style="width:60px">
+<button class="btn dark" onclick="clearBoard(true)">Clear All</button>
+<span style="width:1px;height:20px;background:#334155"></span>
+<button class="btn dark" onclick="document.getElementById('pdfIn').click()">📄 Upload PDF</button>
+<button class="btn dark" onclick="zoomPDF(0.2)">🔍 Zoom+</button>
+<button class="btn dark" onclick="zoomPDF(-0.2)">Zoom-</button>
+<button class="btn dark" onclick="changePage(-1)">◀ Prev</button>
+<span id="pgInfo" style="font-size:12px;color:#000">No PDF</span>
+<button class="btn dark" onclick="changePage(1)">Next ▶</button>
+<input type="file" id="pdfIn" accept="application/pdf" hidden>
+</div>
+</div>
+
+<div class="right">
+<div id="status">⚫ OFF - Teacher START first</div>
+<div id="vcBox"><div style="display:flex;align-items:center;justify-content:center;color:#555;grid-column:1/-1;font-size:12px">Video here</div></div>
+<div style="display:flex;gap:5px"><button class="btn dark" style="flex:1" onclick="togMic()">🎤</button><button class="btn dark" style="flex:1" onclick="togCam()">📷</button><button class="btn dark" style="flex:1" onclick="retryConnect()">Reconnect</button></div>
+<div id="log" style="flex:1;background:#020617;border:1px solid #1e293b;border-radius:8px;padding:6px;overflow:auto;font-size:10px"></div>
+</div>
+</div>
+
 <script>
-let room=new URLSearchParams(location.search).get('room')||'mohan-class-1'; let role=new URLSearchParams(location.search).get('role')||'teacher';
-document.getElementById('roomLabel').textContent='Room: '+room+' | '+role;
-let canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
-function resize(){canvas.width=canvas.parentElement.clientWidth; canvas.height=canvas.parentElement.clientHeight-50; ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);} resize(); window.addEventListener('resize',resize);
-let tool='pen',drawing=false,lx=0,ly=0; function clearBoard(){ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);}
-canvas.addEventListener('pointerdown',e=>{drawing=true; let r=canvas.getBoundingClientRect(); lx=e.clientX-r.left; ly=e.clientY-r.top;});
-canvas.addEventListener('pointermove',e=>{if(!drawing)return; let r=canvas.getBoundingClientRect(); let x=e.clientX-r.left,y=e.clientY-r.top; ctx.strokeStyle=document.getElementById('col').value; ctx.lineWidth=3; ctx.lineCap='round'; ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke(); lx=x; ly=y;});
-canvas.addEventListener('pointerup',()=>drawing=false);
-function addLog(t){let l=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; l.appendChild(d); l.scrollTop=9999;}
-let myPeer=null,myStream=null,teacherConn=null;
-function addV(id,stream){let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id))return; let v=document.createElement('video'); v.id='v-'+id; v.srcObject=stream; v.autoplay=true; v.playsInline=true; if(id==='me')v.muted=true; v.play(); box.appendChild(v); addLog('Video added: '+id);}
+let room=new URLSearchParams(location.search).get('room')||'mohan-class-1';
+let role=new URLSearchParams(location.search).get('role')||'teacher';
+document.getElementById('roomLabel').textContent=room+' | '+role;
+let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d');
+let board=document.getElementById('board'), ctx=board.getContext('2d');
+let wrap=document.getElementById('wrap');
+function log(t){let l=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; l.appendChild(d); l.scrollTop=9999;}
+
+// PDF STATE
+let pdfDoc=null, curPage=1, pdfScale=1.0, pdfPageViewport=null;
+async function renderPDFPage(){
+ if(!pdfDoc) return;
+ let page=await pdfDoc.getPage(curPage);
+ pdfPageViewport=page.getViewport({scale:pdfScale});
+ pdfCanvas.width=pdfPageViewport.width; pdfCanvas.height=pdfPageViewport.height;
+ board.width=pdfPageViewport.width; board.height=pdfPageViewport.height;
+ pdfCanvas.style.width=pdfPageViewport.width+'px'; pdfCanvas.style.height=pdfPageViewport.height+'px';
+ board.style.width=pdfPageViewport.width+'px'; board.style.height=pdfPageViewport.height+'px';
+ await page.render({canvasContext:pdfCtx,viewport:pdfPageViewport}).promise;
+ document.getElementById('pgInfo').textContent='Page '+curPage+'/'+pdfDoc.numPages+' | '+(pdfScale*100).toFixed(0)+'%';
+ // broadcast pdf state
+ broadcast({type:'pdfstate', page:curPage, scale:pdfScale});
+}
+async function loadPDFFromFile(file){
+ let buf=await file.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPage=1; pdfScale=1.2; await renderPDFPage(); clearBoard(false); broadcast({type:'pdfloaded'}); log('PDF loaded, broadcasting to students');
+}
+function zoomPDF(d){ if(!pdfDoc){ alert('Upload PDF first'); return;} pdfScale=Math.max(0.4, Math.min(3, pdfScale+d)); renderPDFPage();}
+function changePage(d){ if(!pdfDoc) return; let np=curPage+d; if(np<1||np>pdfDoc.numPages) return; curPage=np; renderPDFPage(); clearBoard(false); }
+document.getElementById('pdfIn').addEventListener('change',e=>{ if(e.target.files[0]) loadPDFFromFile(e.target.files[0]); });
+
+// BOARD SYNC
+let tool='pen',drawing=false,lx=0,ly=0;
+function setTool(t){tool=t; log('Tool: '+t);}
+function clearBoard(shouldBroadcast){ctx.clearRect(0,0,board.width,board.height); if(shouldBroadcast) broadcast({type:'clear'}); }
+function drawLine(x1,y1,x2,y2,color,size,composite,emit){
+ ctx.strokeStyle=color; ctx.lineWidth=size; ctx.lineCap='round'; ctx.globalCompositeOperation=composite;
+ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+ if(emit){ broadcast({type:'draw', x1,y1,x2,y2,color,size,composite}); }
+}
+board.addEventListener('pointerdown',e=>{drawing=true; let r=board.getBoundingClientRect(); lx=(e.clientX-r.left)*(board.width/r.width); ly=(e.clientY-r.top)*(board.height/r.height);});
+board.addEventListener('pointermove',e=>{
+ if(!drawing) return;
+ let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.height);
+ let col=document.getElementById('col').value; let sz=document.getElementById('sz').value;
+ let comp=tool==='eraser'?'destination-out':'source-over';
+ drawLine(lx,ly,x,y,col,sz,comp,true);
+ lx=x; ly=y;
+});
+board.addEventListener('pointerup',()=>drawing=false);
+board.addEventListener('pointerleave',()=>drawing=false);
+
+// PEER + DATA SYNC
+let myPeer=null,myStream=null, dataConns=[];
+function broadcast(msg){
+ dataConns.forEach(c=>{ try{ if(c.open) c.send(msg); }catch{}} );
+}
+function handleData(msg){
+ if(msg.type==='draw'){ drawLine(msg.x1,msg.y1,msg.x2,msg.y2,msg.color,msg.size,msg.composite,false); }
+ else if(msg.type==='clear'){ clearBoard(false); }
+ else if(msg.type==='pdfstate'){ curPage=msg.page; pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); }
+}
+function addV(id,stream){let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id)) return; let v=document.createElement('video'); v.id='v-'+id; v.srcObject=stream; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play(); box.appendChild(v);}
+
 async function initVC(){
- let box=document.getElementById('vcBox'); box.innerHTML=''; 
- try{myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}catch(err){alert('Allow Camera Mic! '+err);return;}
+ let box=document.getElementById('vcBox'); box.innerHTML='';
+ try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch(err){ alert('Allow Camera'); return; }
  addV('me',myStream);
  if(role==='teacher'){
-   let teacherId='tutor-mohan-'+room; addLog('Teacher ID: '+teacherId);
-   myPeer=new Peer(teacherId); // FIXED ID for teacher
-   myPeer.on('open',id=>{addLog('Teacher LIVE: '+id); document.getElementById('status').textContent='🟢 LIVE - Waiting for students...';});
-   myPeer.on('call',call=>{addLog('Student calling...'); call.answer(myStream); call.on('stream',s=>addV(call.peer,s));});
-   myPeer.on('error',e=>addLog('Error: '+e));
+   let teacherId='tutor-mohan-'+room;
+   myPeer=new Peer(teacherId);
+   myPeer.on('open',id=>{ log('Teacher LIVE: '+id); document.getElementById('status').textContent='🟢 LIVE - Students can join'; });
+   myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addV(call.peer,s)); });
+   myPeer.on('connection',conn=>{
+     dataConns.push(conn); log('Student board connected');
+     conn.on('data',handleData);
+     conn.on('open',()=>{ if(pdfDoc) conn.send({type:'pdfstate',page:curPage,scale:pdfScale}); });
+   });
  } else {
-   // STUDENT
-   let myId='student-'+Math.floor(Math.random()*99999); myPeer=new Peer(myId);
-   myPeer.on('open',()=>{addLog('Student ready, calling teacher...'); setTimeout(()=>callTeacher(),1000);});
+   let myId='student-'+Math.floor(Math.random()*99999);
+   myPeer=new Peer(myId);
+   myPeer.on('open',()=>{ log('Calling teacher...'); setTimeout(callTeacher,1000); });
  }
 }
 function callTeacher(){
- let teacherId='tutor-mohan-'+room; addLog('Calling '+teacherId+'...'); let call=myPeer.call(teacherId,myStream);
- if(!call){addLog('Teacher not online! Ask teacher to START FIRST. Retrying in 3s...'); setTimeout(callTeacher,3000); return;}
- call.on('stream',s=>{addLog('Connected to Teacher!'); addV('teacher',s); document.getElementById('status').textContent='🟢 CONNECTED to Teacher';});
- call.on('error',e=>{addLog('Call failed, retrying...'); setTimeout(callTeacher,3000);});
- call.on('close',()=>addLog('Call closed'));
+ let teacherId='tutor-mohan-'+room;
+ let call=myPeer.call(teacherId,myStream);
+ if(!call){ log('Teacher not online, retrying...'); setTimeout(callTeacher,3000); return; }
+ call.on('stream',s=>{ addV('teacher',s); document.getElementById('status').textContent='🟢 CONNECTED'; });
+ // data connection for board
+ let conn=myPeer.connect(teacherId);
+ conn.on('open',()=>{ dataConns.push(conn); log('Board connected to teacher'); });
+ conn.on('data',handleData);
+ conn.on('error',()=>setTimeout(callTeacher,3000));
 }
-function retryConnect(){if(role!=='teacher')callTeacher();}
+function retryConnect(){ if(role!=='teacher') callTeacher(); }
 async function togCls(){
  let b=document.getElementById('clsBtn'),t=document.getElementById('clsTx');
  if(b.classList.contains('ok')){b.classList.remove('ok');b.classList.add('off');t.textContent='End Class'; await initVC();}
- else{b.classList.remove('off');b.classList.add('ok');t.textContent='Start Class'; if(myStream)myStream.getTracks().forEach(x=>x.stop()); if(myPeer)myPeer.destroy(); document.getElementById('vcBox').innerHTML='OFF'; document.getElementById('status').textContent='⚫ OFF';}
+ else{ b.classList.remove('off');b.classList.add('ok');t.textContent='Start Class'; if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); document.getElementById('vcBox').innerHTML='OFF';}
 }
-function togMic(){if(myStream)myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled); addLog('Mic toggled');}
-function togCam(){if(myStream)myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled); addLog('Cam toggled');}
+function togMic(){ if(myStream) myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled); }
+function togCam(){ if(myStream) myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled); }
+
+// initial board size if no pdf
+function initEmptyBoard(){ pdfCanvas.width=1200; pdfCanvas.height=800; board.width=1200; board.height=800; pdfCtx.fillStyle='#ffffff'; pdfCtx.fillRect(0,0,pdfCanvas.width,pdfCanvas.height); }
+initEmptyBoard();
 </script></body></html>
