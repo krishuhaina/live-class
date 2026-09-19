@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tutor Mohan - Own Classroom</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+body{margin:0;background:#020617;color:#fff;font-family:Arial;height:100vh;display:flex;flex-direction:column}
+.top{height:60px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.logoBox{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;background:#22c55e;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:20px}
+.main{flex:1;display:flex;overflow:hidden}.left{flex:1;display:flex;flex-direction:column}
+#board{flex:1;background:#fff;touch-action:none;cursor:crosshair}
+.toolbar{height:56px;background:#0f172a;display:flex;gap:8px;align-items:center;padding:0 12px;border-top:1px solid #1e293b}
+.right{width:350px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:12px;gap:10px}
+#vcBox{height:210px;background:#000;border:2px solid #22c55e;border-radius:14px;display:grid;grid-template-columns:1fr 1fr;gap:2px;overflow:hidden;padding:2px}
+#vcBox video{width:100%;height:100%;object-fit:cover;background:#111;border-radius:8px}
+.btn{padding:9px 14px;border-radius:9px;font-weight:700;border:0;cursor:pointer;font-size:13px}
+.ok{background:#22c55e;color:#000}.off{background:#ef4444;color:#fff}.dark{background:#1e293b;color:#fff}
+</style></head><body>
+<div class="top">
+<div class="logoBox"><div class="logo">M</div><div><div style="font-weight:800;font-size:16px">Tutor Mohan</div><div style="font-size:11px;opacity:.6">Own Classroom</div></div><div id="roomLabel" style="margin-left:16px;background:#1e293b;padding:5px 10px;border-radius:20px;font-size:12px"></div></div>
+<button id="clsBtn" class="btn ok" onclick="togCls()"><span id="clsTx">Start Class</span></button>
+</div>
+<div class="main">
+<div class="left"><canvas id="board"></canvas><div class="toolbar"><button class="btn dark" onclick="tool='pen'">Pen</button><button class="btn dark" onclick="tool='eraser'">Eraser</button><input type="color" id="col" value="#000000" style="width:32px;height:32px"><input type="range" id="sz" min="1" max="20" value="3" style="width:80px"><button class="btn dark" onclick="clearBoard()">Clear</button><button class="btn dark" onclick="document.getElementById('pdfIn').click()">PDF</button><input type="file" id="pdfIn" accept="application/pdf" hidden></div></div>
+<div class="right"><div id="vcBox"><div style="display:flex;align-items:center;justify-content:center;color:#666;grid-column:1/-1;font-size:12px">Tutor Mohan Video<br>Click Start Class</div></div><div style="display:flex;gap:6px"><button class="btn dark" style="flex:1" onclick="togMic()">Mic</button><button class="btn dark" style="flex:1" onclick="togCam()">Cam</button></div><div id="chatBox" style="flex:1;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px;overflow:auto;font-size:13px"></div><input id="msgIn" placeholder="Type + Enter" style="padding:10px;border-radius:8px;border:0;background:#1e293b;color:#fff;width:100%"></div>
+</div>
+<script>
+let room=new URLSearchParams(location.search).get('room')||'mohan-class-1'; let role=new URLSearchParams(location.search).get('role')||'teacher';
+document.getElementById('roomLabel').textContent='Room: '+room;
+let canvas=document.getElementById('board'), ctx=canvas.getContext('2d');
+function resize(){canvas.width=canvas.parentElement.clientWidth; canvas.height=canvas.parentElement.clientHeight-56; ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);} resize(); window.addEventListener('resize',resize);
+let tool='pen',drawing=false,lx=0,ly=0;
+function clearBoard(){ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);}
+canvas.addEventListener('pointerdown',e=>{drawing=true; let r=canvas.getBoundingClientRect(); lx=e.clientX-r.left; ly=e.clientY-r.top;});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return; let r=canvas.getBoundingClientRect(); let x=e.clientX-r.left,y=e.clientY-r.top; ctx.strokeStyle=document.getElementById('col').value; ctx.lineWidth=document.getElementById('sz').value; ctx.lineCap='round'; ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke(); lx=x; ly=y;});
+canvas.addEventListener('pointerup',()=>drawing=false);
+let myPeer=null,myStream=null;
+async function initVC(){let box=document.getElementById('vcBox'); box.innerHTML=''; try{myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}catch{alert('Allow Camera Mic');return;} addV('you',myStream); let pid=room+'-'+role+'-'+Math.floor(Math.random()*9999); myPeer=new Peer(pid); myPeer.on('open',()=>{if(role!=='teacher')callTeacher();}); myPeer.on('call',call=>{call.answer(myStream); call.on('stream',s=>addV(call.peer,s));}); if(role==='teacher'){let sPeer=new Peer(room+'-teacher'); sPeer.on('call',call=>{call.answer(myStream); call.on('stream',s=>addV(call.peer,s));}); window.sPeer=sPeer;}}
+function callTeacher(){let c=myPeer.call(room+'-teacher',myStream); if(c)c.on('stream',s=>addV('teacher',s));}
+function addV(id,s){let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id))return; let d=document.createElement('div'); let v=document.createElement('video'); v.id='v-'+id; v.srcObject=s; v.autoplay=true; v.playsInline=true; if(id==='you')v.muted=true; v.play(); d.appendChild(v); box.appendChild(d);}
+async function togCls(){let b=document.getElementById('clsBtn'),t=document.getElementById('clsTx'); if(b.classList.contains('ok')){b.classList.remove('ok');b.classList.add('off');t.textContent='End Class';initVC();}else{b.classList.remove('off');b.classList.add('ok');t.textContent='Start Class'; if(myStream)myStream.getTracks().forEach(x=>x.stop()); if(myPeer)myPeer.destroy(); if(window.sPeer)window.sPeer.destroy();}}
+function togMic(){if(myStream)myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled);}
+function togCam(){if(myStream)myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled);}
+document.getElementById('msgIn').addEventListener('keydown',e=>{if(e.key==='Enter'){let m=e.target.value; if(!m)return; let d=document.createElement('div'); d.textContent=role+': '+m; document.getElementById('chatBox').appendChild(d); e.target.value='';}});
+document.getElementById('pdfIn').addEventListener('change',async e=>{let f=e.target.files[0]; if(!f)return; let buf=await f.arrayBuffer(); let pdf=await pdfjsLib.getDocument(buf).promise; let page=await pdf.getPage(1); let vp=page.getViewport({scale:1.2}); let c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; ctx.drawImage(c,0,0,canvas.width,canvas.height);});
+</script></body></html>
