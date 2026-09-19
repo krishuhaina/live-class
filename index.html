@@ -1,162 +1,207 @@
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tutor Mohan - Connected Board</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tutor Mohan - Full Control</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:Arial;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.top{height:58px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
-.logo{width:36px;height:36px;background:#22c55e;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
-.main{flex:1;display:flex;overflow:hidden}
-.left{flex:1;display:flex;flex-direction:column;position:relative;background:#fff}
-.canvasWrap{flex:1;position:relative;overflow:auto;background:#525659;display:flex;justify-content:center;align-items:flex-start;padding:10px}
-#pdfCanvas{position:absolute;left:0;top:0;box-shadow:0 0 10px #000}
-#board{position:absolute;left:0;top:0;touch-action:none;cursor:crosshair;z-index:2}
-.toolbar{height:56px;background:#0f172a;display:flex;gap:6px;align-items:center;padding:0 10px;z-index:5;flex-wrap:wrap}
-.right{width:360px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:10px;gap:8px}
-#vcBox{height:220px;background:#000;border:2px solid #22c55e;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px}
+*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Inter,Arial;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.top{height:62px;background:#0f172a;border-bottom:2px solid #22c55e;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+.logo{width:38px;height:38px;background:#22c55e;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:20px}
+.main{flex:1;display:flex;overflow:hidden}.left{flex:1;display:flex;flex-direction:column;background:#525659}
+.wrap{flex:1;position:relative;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:12px;background:#525659}
+#pdfCanvas{position:absolute;box-shadow:0 0 12px #000} #board{position:absolute;touch-action:none;z-index:2;cursor:crosshair}
+.toolbar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:#0f172a;padding:8px;border-top:1px solid #1e293b;z-index:10}
+.btn{padding:6px 10px;border-radius:7px;border:1px solid #334155;background:#1e293b;color:#fff;font-weight:700;cursor:pointer;font-size:11px}.btn.on{border-color:#22c55e;background:#22c55e;color:#000}
+.colors{display:flex;gap:4px;align-items:center}.c{width:22px;height:22px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.right{width:380px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:8px;gap:8px;overflow:hidden}
+#vcBox{height:200px;background:#000;border:2px solid #22c55e;border-radius:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px}
 video{width:100%;height:100%;object-fit:cover;background:#111;border-radius:6px}
-.btn{padding:7px 10px;border-radius:7px;border:0;font-weight:700;cursor:pointer;font-size:12px}.ok{background:#22c55e;color:#000}.off{background:#ef4444;color:#fff}.dark{background:#1e293b;color:#fff;border:1px solid #334155}
-#status{font-size:11px;padding:5px;background:#020617;border-radius:5px;color:#22c55e}
+#status{font-size:11px;padding:6px;background:#020617;border-radius:6px;color:#22c55e;border:1px solid #1e293b}
+.perm{border:1px solid #334155;border-radius:8px;padding:8px;background:#020617}.perm h4{margin:0 0 6px 0;font-size:12px}
+.slideBar{display:flex;gap:4px;overflow:auto;padding:4px;background:#020617;border-radius:6px}
+.slideThumb{width:60px;height:42px;background:#fff;border:2px solid transparent;border-radius:4px;cursor:pointer;flex-shrink:0}.slideThumb.active{border-color:#22c55e}
 </style></head><body>
-<div class="top"><div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div><div style="font-weight:800;font-size:15px">Tutor Mohan</div><div style="font-size:10px;opacity:.6">Connected Board • PDF Annotate</div></div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:11px"></div></div><button id="clsBtn" class="btn ok" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
+<div class="top">
+<div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div><div style="font-weight:900">TUTOR MOHAN</div><div style="font-size:9px;opacity:.6">Teacher Controlled VC</div></div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:11px"></div></div>
+<div style="display:flex;gap:6px"><button id="recBtn" class="btn" onclick="toggleRec()">● Rec</button><button id="clsBtn" class="btn" style="background:#22c55e;color:#000" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
+</div>
 
 <div class="main">
 <div class="left">
-<div class="canvasWrap" id="wrap">
-<canvas id="pdfCanvas"></canvas>
-<canvas id="board"></canvas>
-</div>
-<div class="toolbar">
-<button class="btn dark" onclick="setTool('pen')">✏️ Pen</button>
-<button class="btn dark" onclick="setTool('eraser')">🧹 Eraser</button>
-<input type="color" id="col" value="#ff0000" style="width:28px;height:28px">
-<input type="range" id="sz" min="1" max="15" value="3" style="width:60px">
-<button class="btn dark" onclick="clearBoard(true)">Clear All</button>
-<span style="width:1px;height:20px;background:#334155"></span>
-<button class="btn dark" onclick="document.getElementById('pdfIn').click()">📄 Upload PDF</button>
-<button class="btn dark" onclick="zoomPDF(0.2)">🔍 Zoom+</button>
-<button class="btn dark" onclick="zoomPDF(-0.2)">Zoom-</button>
-<button class="btn dark" onclick="changePage(-1)">◀ Prev</button>
-<span id="pgInfo" style="font-size:12px;color:#000">No PDF</span>
-<button class="btn dark" onclick="changePage(1)">Next ▶</button>
+<div class="wrap" id="wrap"><canvas id="pdfCanvas"></canvas><canvas id="board"></canvas></div>
+<div class="toolbar" id="tb">
+<button class="btn on" data-tool="pen" onclick="setTool('pen')">✏️ Pen</button>
+<button class="btn" data-tool="rect" onclick="setTool('rect')">⬜ Rect</button>
+<button class="btn" data-tool="circle" onclick="setTool('circle')">⭕ Circle</button>
+<button class="btn" data-tool="line" onclick="setTool('line')">📏 Line</button>
+<button class="btn" data-tool="eraser" onclick="setTool('eraser')">🧹 Pixel Eraser</button>
+<button class="btn" data-tool="strokeEraser" onclick="setTool('strokeEraser')">🗑️ Stroke Eraser</button>
+<div class="colors" id="pal"></div>
+<div style="display:flex;gap:3px" id="sizes"></div>
+<button class="btn" onclick="clearCurrentSlide(true)">Clear Page</button>
+<span style="width:1px;height:22px;background:#334155"></span>
+<button class="btn" onclick="document.getElementById('pdfIn').click()">📄 PDF</button>
+<button class="btn" onclick="switchToWhiteboard()">⬜ Whiteboard</button>
+<button class="btn" onclick="zoomPDF(0.2)">Zoom+</button>
+<button class="btn" onclick="zoomPDF(-0.2)">Zoom-</button>
+<button class="btn" onclick="changePage(-1)">◀</button><span id="pgInfo" style="color:#fff;font-size:11px">No PDF</span><button class="btn" onclick="changePage(1)">▶</button>
+<button class="btn" onclick="addNewSlide('white')">+ White</button>
+<button class="btn" onclick="addNewSlide('ruled')">+ Ruled</button>
+<button class="btn" onclick="addNewSlide('graph')">+ Graph</button>
+<button class="btn" style="background:#22c55e;color:#000" onclick="saveAllAsPDF()">💾 Save All as PDF</button>
 <input type="file" id="pdfIn" accept="application/pdf" hidden>
 </div>
 </div>
 
 <div class="right">
-<div id="status">⚫ OFF - Teacher START first</div>
-<div id="vcBox"><div style="display:flex;align-items:center;justify-content:center;color:#555;grid-column:1/-1;font-size:12px">Video here</div></div>
-<div style="display:flex;gap:5px"><button class="btn dark" style="flex:1" onclick="togMic()">🎤</button><button class="btn dark" style="flex:1" onclick="togCam()">📷</button><button class="btn dark" style="flex:1" onclick="retryConnect()">Reconnect</button></div>
-<div id="log" style="flex:1;background:#020617;border:1px solid #1e293b;border-radius:8px;padding:6px;overflow:auto;font-size:10px"></div>
+<div id="status">⚫ OFFLINE - Teacher must Start First</div>
+<div id="vcBox"><div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#666;font-size:12px">Video</div></div>
+<div style="display:flex;gap:5px"><button class="btn" style="flex:1" onclick="togMic()">Mic</button><button class="btn" style="flex:1" onclick="togCam()">Cam</button><button class="btn" style="flex:1" onclick="retryConnect()">Reconnect</button></div>
+
+<div class="perm" id="permPanel" style="display:none">
+<h4>👨‍🏫 Teacher Controls</h4>
+<label style="font-size:11px"><input type="checkbox" id="pWrite" checked onchange="updatePerms()"> Allow Student to Write</label><br>
+<label style="font-size:11px"><input type="checkbox" id="pChat" checked onchange="updatePerms()"> Allow Student Chat</label><br>
+<label style="font-size:11px"><input type="checkbox" id="pShare" onchange="updatePerms()"> Allow Student Screen Share</label><br>
+<button class="btn" style="width:100%;margin-top:6px;background:#ef4444;color:#fff" onclick="endClassForAll()">❌ End Class for All</button>
+</div>
+
+<div style="font-size:11px;font-weight:700">📑 Slides (Click to switch)</div>
+<div class="slideBar" id="slideBar"></div>
+
+<div id="log" style="flex:1;background:#020617;border:1px solid #1e293b;border-radius:6px;padding:5px;overflow:auto;font-size:10px"></div>
+<div id="chatBox" style="height:100px;background:#020617;border:1px solid #1e293b;border-radius:6px;padding:5px;display:flex;flex-direction:column"><div id="chatMsgs" style="flex:1;overflow:auto;font-size:11px"></div><div style="display:flex;gap:4px"><input id="chatIn" placeholder="Chat..." style="flex:1;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:4px;padding:4px"><button class="btn" onclick="sendChat()">Send</button></div></div>
 </div>
 </div>
 
 <script>
-let room=new URLSearchParams(location.search).get('room')||'mohan-class-1';
-let role=new URLSearchParams(location.search).get('role')||'teacher';
-document.getElementById('roomLabel').textContent=room+' | '+role;
+let room=new URLSearchParams(location.search).get('room')||'mohan-class-1'; let role=new URLSearchParams(location.search).get('role')||'teacher';
+document.getElementById('roomLabel').textContent=room+' | '+role.toUpperCase();
+if(role==='teacher') document.getElementById('permPanel').style.display='block';
 let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d');
-let board=document.getElementById('board'), ctx=board.getContext('2d');
-let wrap=document.getElementById('wrap');
-function log(t){let l=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; l.appendChild(d); l.scrollTop=9999;}
+let board=document.getElementById('board'), ctx=board.getContext('2d'), wrap=document.getElementById('wrap');
+function log(t){let el=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; el.appendChild(d); el.scrollTop=9999;}
+// COLORS
+let palette=['#000000','#ff0000','#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff','#ff8c00','#00ffff','#a3e635','#ff00ff'];
+let curColor='#ff0000', curSize=3, curTool='pen';
+let palEl=document.getElementById('pal'); palette.forEach(c=>{let d=document.createElement('div'); d.className='c'; d.style.background=c; d.onclick=()=>{curColor=c; log('Color '+c)}; palEl.appendChild(d);});
+let sizes=[2,4,8,12]; let szEl=document.getElementById('sizes'); sizes.forEach(s=>{let b=document.createElement('button'); b.className='btn'+(s===3?' on':''); b.textContent=s+'px'; b.onclick=()=>{curSize=s; document.querySelectorAll('#sizes.btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');}; szEl.appendChild(b);});
 
-// PDF STATE
-let pdfDoc=null, curPage=1, pdfScale=1.0, pdfPageViewport=null;
-async function renderPDFPage(){
- if(!pdfDoc) return;
- let page=await pdfDoc.getPage(curPage);
- pdfPageViewport=page.getViewport({scale:pdfScale});
- pdfCanvas.width=pdfPageViewport.width; pdfCanvas.height=pdfPageViewport.height;
- board.width=pdfPageViewport.width; board.height=pdfPageViewport.height;
- pdfCanvas.style.width=pdfPageViewport.width+'px'; pdfCanvas.style.height=pdfPageViewport.height+'px';
- board.style.width=pdfPageViewport.width+'px'; board.style.height=pdfPageViewport.height+'px';
- await page.render({canvasContext:pdfCtx,viewport:pdfPageViewport}).promise;
- document.getElementById('pgInfo').textContent='Page '+curPage+'/'+pdfDoc.numPages+' | '+(pdfScale*100).toFixed(0)+'%';
- // broadcast pdf state
- broadcast({type:'pdfstate', page:curPage, scale:pdfScale});
+// SLIDES SYSTEM
+let slides=[{bg:'white', pdf:null, strokes:[], pdfPage:null, scale:1.2}]; let curSlide=0;
+let pdfDoc=null, curPdfPage=1, pdfScale=1.2;
+function drawBackground(bg){
+ pdfCtx.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); pdfCtx.fillStyle='#fff'; pdfCtx.fillRect(0,0,pdfCanvas.width,pdfCanvas.height);
+ if(bg==='ruled'){ pdfCtx.strokeStyle='#93c5fd'; pdfCtx.lineWidth=1; for(let y=40;y<pdfCanvas.height;y+=32){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(pdfCanvas.width,y); pdfCtx.stroke(); } pdfCtx.strokeStyle='#fca5a5'; pdfCtx.beginPath(); pdfCtx.moveTo(60,0); pdfCtx.lineTo(60,pdfCanvas.height); pdfCtx.stroke(); }
+ else if(bg==='graph'){ pdfCtx.strokeStyle='#e5e7eb'; pdfCtx.lineWidth=1; for(let x=0;x<pdfCanvas.width;x+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(x,0); pdfCtx.lineTo(x,pdfCanvas.height); pdfCtx.stroke(); } for(let y=0;y<pdfCanvas.height;y+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(pdfCanvas.width,y); pdfCtx.stroke(); } }
 }
-async function loadPDFFromFile(file){
- let buf=await file.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPage=1; pdfScale=1.2; await renderPDFPage(); clearBoard(false); broadcast({type:'pdfloaded'}); log('PDF loaded, broadcasting to students');
+function redrawAll(){
+ let s=slides[curSlide]; pdfCanvas.width=1000; pdfCanvas.height=700; board.width=1000; board.height=700;
+ pdfCanvas.style.width='1000px'; pdfCanvas.style.height='700px'; board.style.width='1000px'; board.style.height='700px';
+ if(s.pdf && s.pdfPage){ /* pdf render handled separately */ } else drawBackground(s.bg);
+ ctx.clearRect(0,0,board.width,board.height);
+ s.strokes.forEach(st=>{ if(st.type==='pen'){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.globalCompositeOperation='source-over'; ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='rect'){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.strokeRect(st.x1,st.y1,st.x2-st.x1,st.y2-st.y1);} else if(st.type==='circle'){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; let r=Math.hypot(st.x2-st.x1,st.y2-st.y1); ctx.beginPath(); ctx.arc(st.x1,st.y1,r,0,6.28); ctx.stroke(); } else if(st.type==='line'){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } });
+ renderThumbBar();
 }
-function zoomPDF(d){ if(!pdfDoc){ alert('Upload PDF first'); return;} pdfScale=Math.max(0.4, Math.min(3, pdfScale+d)); renderPDFPage();}
-function changePage(d){ if(!pdfDoc) return; let np=curPage+d; if(np<1||np>pdfDoc.numPages) return; curPage=np; renderPDFPage(); clearBoard(false); }
-document.getElementById('pdfIn').addEventListener('change',e=>{ if(e.target.files[0]) loadPDFFromFile(e.target.files[0]); });
+function saveCurrentStrokeToSlide(st){ slides[curSlide].strokes.push(st); }
+function renderThumbBar(){ let bar=document.getElementById('slideBar'); bar.innerHTML=''; slides.forEach((s,i)=>{let c=document.createElement('canvas'); c.className='slideThumb'+(i===curSlide?' active':''); c.width=60; c.height=42; c.onclick=()=>switchSlide(i); bar.appendChild(c);});}
+function switchSlide(i){ // save current board as is already in strokes
+ curSlide=i; redrawAll(); broadcast({type:'switchSlide', idx:i}); log('Switched to slide '+(i+1)); }
+function addNewSlide(bg){ slides.push({bg:bg, strokes:[], pdf:null, pdfPage:null}); switchSlide(slides.length-1); broadcast({type:'newSlide', bg:bg}); }
+function switchToWhiteboard(){ addNewSlide('white'); if(pdfDoc) pdfDoc=null; document.getElementById('pgInfo').textContent='Whiteboard'; }
+function clearCurrentSlide(broadcastIt){ slides[curSlide].strokes=[]; ctx.clearRect(0,0,board.width,board.height); if(broadcastIt) broadcast({type:'clear'}); }
 
-// BOARD SYNC
-let tool='pen',drawing=false,lx=0,ly=0;
-function setTool(t){tool=t; log('Tool: '+t);}
-function clearBoard(shouldBroadcast){ctx.clearRect(0,0,board.width,board.height); if(shouldBroadcast) broadcast({type:'clear'}); }
-function drawLine(x1,y1,x2,y2,color,size,composite,emit){
- ctx.strokeStyle=color; ctx.lineWidth=size; ctx.lineCap='round'; ctx.globalCompositeOperation=composite;
- ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
- if(emit){ broadcast({type:'draw', x1,y1,x2,y2,color,size,composite}); }
-}
-board.addEventListener('pointerdown',e=>{drawing=true; let r=board.getBoundingClientRect(); lx=(e.clientX-r.left)*(board.width/r.width); ly=(e.clientY-r.top)*(board.height/r.height);});
+// DRAWING + SHAPES
+let drawing=false, sx=0,sy=0,lx=0,ly=0;
+function setTool(t){ curTool=t; document.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('on')); let b=document.querySelector('[data-tool="'+t+'"]'); if(b) b.classList.add('on'); }
+board.addEventListener('pointerdown',e=>{
+ if(role!=='teacher' &&!perms.canWrite){ log('Teacher disabled writing'); return; }
+ drawing=true; let r=board.getBoundingClientRect(); sx=(e.clientX-r.left)*(board.width/r.width); sy=(e.clientY-r.top)*(board.height/r.height); lx=sx; ly=sy;
+});
 board.addEventListener('pointermove',e=>{
- if(!drawing) return;
- let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.height);
- let col=document.getElementById('col').value; let sz=document.getElementById('sz').value;
- let comp=tool==='eraser'?'destination-out':'source-over';
- drawLine(lx,ly,x,y,col,sz,comp,true);
+ if(!drawing) return; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.height);
+ if(curTool==='pen'){ ctx.strokeStyle=curColor; ctx.lineWidth=curSize; ctx.lineCap='round'; ctx.globalCompositeOperation='source-over'; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke(); let st={type:'pen',x1:lx,y1:ly,x2:x,y2:y,color:curColor,size:curSize}; saveCurrentStrokeToSlide(st); broadcast({type:'draw',...st}); }
+ else if(curTool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,12,0,6.28); ctx.fill(); broadcast({type:'erasePixel', x,y}); }
  lx=x; ly=y;
 });
-board.addEventListener('pointerup',()=>drawing=false);
-board.addEventListener('pointerleave',()=>drawing=false);
+board.addEventListener('pointerup',e=>{
+ if(!drawing) return; drawing=false;
+ let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.height);
+ if(['rect','circle','line'].includes(curTool)){
+   let st={type:curTool,x1:sx,y1:sy,x2:x,y2:y,color:curColor,size:curSize}; saveCurrentStrokeToSlide(st); redrawAll(); broadcast({type:'drawShape',...st});
+ } else if(curTool==='strokeEraser'){
+   // remove last stroke near click
+   let s=slides[curSlide].strokes; for(let i=s.length-1;i>=0;i--){ if(Math.hypot(s[i].x1-x,s[i].y1-y)<30 || Math.hypot(s[i].x2-x,s[i].y2-y)<30){ s.splice(i,1); break; } } redrawAll(); broadcast({type:'removeLast'}); }
+});
 
-// PEER + DATA SYNC
-let myPeer=null,myStream=null, dataConns=[];
-function broadcast(msg){
- dataConns.forEach(c=>{ try{ if(c.open) c.send(msg); }catch{}} );
+// PERMS
+let perms={canWrite:true,canChat:true,canShare:false};
+function updatePerms(){ perms.canWrite=document.getElementById('pWrite').checked; perms.canChat=document.getElementById('pChat').checked; perms.canShare=document.getElementById('pShare').checked; broadcast({type:'perms', perms}); log('Permissions updated'); }
+
+// PDF HANDLING
+async function renderPDFPage(){
+ if(!pdfDoc) return; let page=await pdfDoc.getPage(curPdfPage); let vp=page.getViewport({scale:pdfScale}); pdfCanvas.width=vp.width; pdfCanvas.height=vp.height; board.width=vp.width; board.height=vp.height; pdfCanvas.style.width=vp.width+'px'; board.style.width=vp.width+'px'; pdfCanvas.style.height=vp.height+'px'; board.style.height=vp.height+'px'; await page.render({canvasContext:pdfCtx,viewport:vp}).promise; document.getElementById('pgInfo').textContent='Page '+curPdfPage+'/'+pdfDoc.numPages+' '+(pdfScale*100).toFixed(0)+'%'; // keep current strokes
+ let s=slides[curSlide]; ctx.clearRect(0,0,board.width,board.height); s.strokes.forEach(st=>{ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); });
 }
+async function loadPDFFromFile(file){
+ let buf=await file.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPdfPage=1; pdfScale=1.2; // create slide for pdf
+ slides[curSlide]={bg:'pdf', strokes:[], pdf:true, pdfPage:curPdfPage}; await renderPDFPage(); broadcast({type:'pdfOpened'}); log('PDF opened');
+}
+function zoomPDF(d){ if(!pdfDoc){ alert('Upload PDF first or click Whiteboard'); return;} pdfScale=Math.max(0.4,Math.min(3,pdfScale+d)); renderPDFPage(); broadcast({type:'zoom', scale:pdfScale}); }
+function changePage(d){ if(!pdfDoc) return; let np=curPdfPage+d; if(np<1||np>pdfDoc.numPages) return; curPdfPage=np; slides[curSlide].pdfPage=np; renderPDFPage(); broadcast({type:'pdfPage', page:np}); }
+document.getElementById('pdfIn').addEventListener('change',e=>{ if(e.target.files[0]) loadPDFFromFile(e.target.files[0]); });
+
+// SAVE ALL AS PDF
+async function saveAllAsPDF(){
+ let {jsPDF}=window.jspdf; let doc=new jsPDF('l','mm','a4'); for(let i=0;i<slides.length;i++){ if(i>0) doc.addPage(); // combine pdfCanvas+board to image
+   let tmp=document.createElement('canvas'); tmp.width=pdfCanvas.width; tmp.height=pdfCanvas.height; let tctx=tmp.getContext('2d'); tctx.drawImage(pdfCanvas,0,0); tctx.drawImage(board,0,0);
+   let img=tmp.toDataURL('image/png'); doc.addImage(img,'PNG',0,0,297,210);
+   if(i!==curSlide){ // save current then restore
+   }
+   // switch for export
+   if(i<slides.length-1){ curSlide=i+1; redrawAll(); await new Promise(r=>setTimeout(r,300)); }
+ } doc.save('TutorMohan-Class-'+room+'.pdf'); curSlide=0; redrawAll(); log('PDF saved');
+}
+
+// CHAT + NETWORK
+function sendChat(){ let inp=document.getElementById('chatIn'); if(!inp.value) return; if(role!=='teacher' &&!perms.canChat){ alert('Chat disabled by teacher'); return; } let msg=inp.value; addChat(role+': '+msg); broadcast({type:'chat', msg:role+': '+msg}); inp.value=''; }
+function addChat(m){ let el=document.getElementById('chatMsgs'); let d=document.createElement('div'); d.textContent=m; el.appendChild(d); el.scrollTop=9999; }
+
+// PEER
+let myPeer=null,myStream=null,dataConns=[], recorder=null, recChunks=[];
+function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o);}catch{}}); }
 function handleData(msg){
- if(msg.type==='draw'){ drawLine(msg.x1,msg.y1,msg.x2,msg.y2,msg.color,msg.size,msg.composite,false); }
- else if(msg.type==='clear'){ clearBoard(false); }
- else if(msg.type==='pdfstate'){ curPage=msg.page; pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); }
+ if(msg.type==='draw'){ let s=slides[curSlide]; s.strokes.push(msg); ctx.strokeStyle=msg.color; ctx.lineWidth=msg.size; ctx.beginPath(); ctx.moveTo(msg.x1,msg.y1); ctx.lineTo(msg.x2,msg.y2); ctx.stroke(); }
+ else if(msg.type==='drawShape'){ slides[curSlide].strokes.push(msg); redrawAll(); }
+ else if(msg.type==='clear'){ clearCurrentSlide(false); }
+ else if(msg.type==='erasePixel'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(msg.x,msg.y,12,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
+ else if(msg.type==='removeLast'){ slides[curSlide].strokes.pop(); redrawAll(); }
+ else if(msg.type==='newSlide'){ slides.push({bg:msg.bg,strokes:[]}); renderThumbBar(); }
+ else if(msg.type==='switchSlide'){ curSlide=msg.idx; redrawAll(); }
+ else if(msg.type==='perms'){ perms=msg.perms; log('Perms updated by teacher'); }
+ else if(msg.type==='chat'){ addChat(msg.msg); }
+ else if(msg.type==='classEnded'){ alert('Teacher ended class'); location.href='about:blank'; }
+ else if(msg.type==='zoom'){ pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); }
+ else if(msg.type==='pdfPage'){ curPdfPage=msg.page; if(pdfDoc) renderPDFPage(); }
 }
 function addV(id,stream){let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id)) return; let v=document.createElement('video'); v.id='v-'+id; v.srcObject=stream; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play(); box.appendChild(v);}
-
 async function initVC(){
- let box=document.getElementById('vcBox'); box.innerHTML='';
- try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch(err){ alert('Allow Camera'); return; }
- addV('me',myStream);
- if(role==='teacher'){
-   let teacherId='tutor-mohan-'+room;
-   myPeer=new Peer(teacherId);
-   myPeer.on('open',id=>{ log('Teacher LIVE: '+id); document.getElementById('status').textContent='🟢 LIVE - Students can join'; });
-   myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addV(call.peer,s)); });
-   myPeer.on('connection',conn=>{
-     dataConns.push(conn); log('Student board connected');
-     conn.on('data',handleData);
-     conn.on('open',()=>{ if(pdfDoc) conn.send({type:'pdfstate',page:curPage,scale:pdfScale}); });
-   });
- } else {
-   let myId='student-'+Math.floor(Math.random()*99999);
-   myPeer=new Peer(myId);
-   myPeer.on('open',()=>{ log('Calling teacher...'); setTimeout(callTeacher,1000); });
- }
+ let box=document.getElementById('vcBox'); box.innerHTML=''; myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); addV('me',myStream);
+ if(role==='teacher'){ let tid='tutor-mohan-'+room; myPeer=new Peer(tid); myPeer.on('open',()=>{document.getElementById('status').textContent='🟢 LIVE - Students can join'; log('Teacher LIVE');}); myPeer.on('call',call=>{call.answer(myStream); call.on('stream',s=>addV(call.peer,s));}); myPeer.on('connection',conn=>{dataConns.push(conn); conn.on('data',handleData);}); }
+ else { let sid='student-'+Math.random().toString(36).slice(2,7); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(callTeacher,1000)); }
 }
-function callTeacher(){
- let teacherId='tutor-mohan-'+room;
- let call=myPeer.call(teacherId,myStream);
- if(!call){ log('Teacher not online, retrying...'); setTimeout(callTeacher,3000); return; }
- call.on('stream',s=>{ addV('teacher',s); document.getElementById('status').textContent='🟢 CONNECTED'; });
- // data connection for board
- let conn=myPeer.connect(teacherId);
- conn.on('open',()=>{ dataConns.push(conn); log('Board connected to teacher'); });
- conn.on('data',handleData);
- conn.on('error',()=>setTimeout(callTeacher,3000));
-}
+function callTeacher(){ let tid='tutor-mohan-'+room; let call=myPeer.call(tid,myStream); if(!call){ log('Waiting for teacher...'); document.getElementById('status').textContent='⏳ Waiting for Teacher to Start...'; setTimeout(callTeacher,3000); return; } call.on('stream',s=>{addV('teacher',s); document.getElementById('status').textContent='🟢 Connected to Teacher';}); let conn=myPeer.connect(tid); conn.on('open',()=>{dataConns.push(conn); log('Board linked');}); conn.on('data',handleData); conn.on('close',()=>{document.getElementById('status').textContent='❌ Teacher ended';}); }
 function retryConnect(){ if(role!=='teacher') callTeacher(); }
-async function togCls(){
- let b=document.getElementById('clsBtn'),t=document.getElementById('clsTx');
- if(b.classList.contains('ok')){b.classList.remove('ok');b.classList.add('off');t.textContent='End Class'; await initVC();}
- else{ b.classList.remove('off');b.classList.add('ok');t.textContent='Start Class'; if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); document.getElementById('vcBox').innerHTML='OFF';}
-}
+async function togCls(){ let b=document.getElementById('clsBtn'),t=document.getElementById('clsTx'); if(b.style.background!==''){ // actually check
+ } let isStart=document.getElementById('clsTx').textContent==='Start Class'; if(isStart){ document.getElementById('clsTx').textContent='End Class'; document.getElementById('clsBtn').style.background='#ef4444'; await initVC(); } else { endClassForAll(); } }
+function endClassForAll(){ broadcast({type:'classEnded'}); if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); alert('Class Ended'); location.reload(); }
 function togMic(){ if(myStream) myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled); }
 function togCam(){ if(myStream) myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled); }
-
-// initial board size if no pdf
-function initEmptyBoard(){ pdfCanvas.width=1200; pdfCanvas.height=800; board.width=1200; board.height=800; pdfCtx.fillStyle='#ffffff'; pdfCtx.fillRect(0,0,pdfCanvas.width,pdfCanvas.height); }
-initEmptyBoard();
+function toggleRec(){
+ if(!recorder){ let c=document.createElement('canvas'); c.width=pdfCanvas.width; c.height=pdfCanvas.height; let stream=c.captureStream(30); if(myStream) { let m=new MediaStream([...stream.getVideoTracks(),...myStream.getAudioTracks()]); recChunks=[]; recorder=new MediaRecorder(m); } else { recChunks=[]; recorder=new MediaRecorder(stream); }
+   recorder.ondataavailable=e=>recChunks.push(e.data); recorder.onstop=()=>{ let blob=new Blob(recChunks,{type:'video/webm'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TutorMohan-'+room+'.webm'; a.click(); }; recorder.start(); document.getElementById('recBtn').textContent='■ Stop Rec'; document.getElementById('recBtn').style.background='#ef4444'; log('Recording started');
+   setInterval(()=>{ let tmp=document.createElement('canvas'); tmp.width=pdfCanvas.width; tmp.height=pdfCanvas.height; let tctx=tmp.getContext('2d'); tctx.drawImage(pdfCanvas,0,0); tctx.drawImage(board,0,0); c.getContext('2d').drawImage(tmp,0,0); },100);
+ } else { recorder.stop(); recorder=null; document.getElementById('recBtn').textContent='● Rec'; document.getElementById('recBtn').style.background='#1e293b'; log('Recording stopped'); }
+}
+redrawAll(); log('Ready - Teacher must click Start Class');
 </script></body></html>
