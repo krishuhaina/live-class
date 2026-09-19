@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tutor Mohan - Sync Fixed</title>
+<title>Tutor Mohan - Final Polish</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -7,12 +7,12 @@
 .top{height:56px;background:#020617;border-bottom:2px solid #22c55e;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
 .logo{width:34px;height:34px;background:#22c55e;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
 .main{flex:1;display:flex;overflow:hidden}.left{flex:1;position:relative;background:#525659;overflow:hidden}
-.wrap{width:100%;height:100%;position:relative;overflow:auto;display:flex;justify-content:center;padding:10px}
-#pdfCanvas{position:absolute;box-shadow:0 0 12px #000} #board{position:absolute;z-index:2;touch-action:none}
-.floatingTB{position:absolute;left:10px;top:10px;z-index:20;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 24px #000}
+.wrap{width:100%;height:100%;position:relative;overflow:auto;display:flex;justify-content:center;padding:10px;cursor:grab}
+#pdfCanvas{position:absolute;box-shadow:0 0 12px #000;width:1000px;height:700px} #board{position:absolute;z-index:2;width:1000px;height:700px;touch-action:none}
+.floatingTB{position:absolute;left:12px;top:12px;z-index:20;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 24px #000}
 .toolBtn{width:44px;height:44px;border-radius:10px;border:2px solid transparent;background:#1e293b;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}.toolBtn.on{border-color:#22c55e;background:#22c55e;color:#000}
 .colors{display:grid;grid-template-columns:repeat(4,22px);gap:5px}.c{width:22px;height:22px;border-radius:50%;border:2px solid #fff;cursor:pointer}.c.on{outline:3px solid #22c55e}
-.sizes{display:flex;gap:4px}.sz{width:24px;height:24px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;font-weight:900;border:2px solid transparent}.sz.on{border-color:#22c55e}
+.sizes{display:flex;flex-direction:column;gap:6px;align-items:center}.sz{display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;background:#020617;border-radius:8px;width:44px;height:28px}.sz.on{border-color:#22c55e;background:#22c55e}.sz div{border-radius:50%;background:currentColor}
 .right{width:360px;background:#0f172a;border-left:1px solid #1e293b;display:flex;flex-direction:column;padding:8px;gap:8px}
 #vcBox{height:200px;background:#000;border:2px solid #22c55e;border-radius:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px} video{width:100%;height:100%;object-fit:cover;background:#111}
 #status{padding:8px;border-radius:8px;background:#020617;border:1px solid #22c55e;font-size:11px}
@@ -20,79 +20,125 @@
 .perm{background:#020617;border:1px solid #334155;border-radius:8px;padding:8px}
 .slideBar{display:flex;gap:4px;overflow:auto;background:#020617;padding:4px;border-radius:6px}.slideThumb{width:64px;height:42px;background:#fff;border:2px solid transparent;border-radius:4px;flex-shrink:0}.slideThumb.active{border-color:#22c55e}
 .toolbarDisabled{opacity:0.2;pointer-events:none}
+#pdfFooter{display:none;align-items:center;gap:6px;background:#020617;border-top:1px solid #334155;padding:6px;justify-content:center}
+#pdfFooter.show{display:flex}
+/* CURSORS - Pen Tab Friendly */
+.cursor-pen{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>') 0 24, crosshair!important}
+.cursor-eraser{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="2" fill="white" stroke="black" stroke-width="2"/></svg>') 12 12, cell!important}
+.cursor-hand{cursor:grab!important}.cursor-hand:active{cursor:grabbing!important}
 </style></head><body>
-<div class="top"><div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div style="font-weight:900">TUTOR MOHAN - SYNC FIXED</div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:11px"></div></div><button id="clsBtn" class="btn" style="background:#22c55e;color:#000" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
-<div class="main"><div class="left"><div class="wrap" id="wrap"><canvas id="pdfCanvas"></canvas><canvas id="board"></canvas>
+<div class="top"><div style="display:flex;align-items:center;gap:10px"><div class="logo">M</div><div style="font-weight:900">TUTOR MOHAN</div><div id="roomLabel" style="background:#1e293b;padding:4px 10px;border-radius:20px;font-size:11px"></div></div><button id="clsBtn" class="btn" style="background:#22c55e;color:#000" onclick="togCls()"><span id="clsTx">Start Class</span></button></div>
+<div class="main"><div class="left">
+<div class="wrap" id="wrap"><canvas id="pdfCanvas"></canvas><canvas id="board"></canvas>
 <div class="floatingTB" id="floatTB">
-<button class="toolBtn on" data-t="pen" onclick="setTool('pen')">✏️</button>
+<button class="toolBtn" data-t="hand" onclick="setTool('hand')" title="Hand / Pan">✋</button>
+<button class="toolBtn on" data-t="pen" onclick="setTool('pen')" title="Pen - PenTab Friendly">✏️</button>
 <button class="toolBtn" data-t="rect" onclick="setTool('rect')">⬜</button>
 <button class="toolBtn" data-t="circle" onclick="setTool('circle')">⭕</button>
 <button class="toolBtn" data-t="line" onclick="setTool('line')">📏</button>
-<button class="toolBtn" data-t="eraser" onclick="setTool('eraser')">🧹</button>
+<button class="toolBtn" data-t="eraser" onclick="setTool('eraser')" title="Eraser">🧹</button>
 <button class="toolBtn" data-t="strokeEraser" onclick="setTool('strokeEraser')">🗑️</button>
 <div style="height:1px;background:#334155"></div>
 <div class="colors" id="pal"></div>
 <div class="sizes" id="szs"></div>
 <div style="height:1px;background:#334155"></div>
-<button class="toolBtn" onclick="clearCurrent(true)">🧼</button>
-<button class="toolBtn" onclick="document.getElementById('pdfIn').click()">📄</button>
-<button class="toolBtn" onclick="switchToWhiteboard()">⬜</button>
-</div></div></div>
-<div class="right"><div id="status">⚫ OFFLINE</div><div id="vcBox"><div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#666">Video here</div></div>
+<button class="toolBtn teacherOnly" onclick="clearCurrent(true)">🧼</button>
+<button class="toolBtn teacherOnly" onclick="document.getElementById('pdfIn').click()">📄</button>
+<button class="toolBtn teacherOnly" onclick="switchToWhiteboard()">⬜ White</button>
+<button class="toolBtn teacherOnly" onclick="addNewSlide('ruled')">📏 Ruled</button>
+<button class="toolBtn teacherOnly" onclick="addNewSlide('graph')">Graph</button>
+</div>
+</div>
+<div id="pdfFooter">
+<span style="font-size:11px">PDF Controls:</span>
+<button class="btn" onclick="zoomPDF(0.2)">Zoom+</button>
+<button class="btn" onclick="zoomPDF(-0.2)">Zoom-</button>
+<button class="btn" onclick="changePage(-1)">◀ Prev</button><span id="pgInfo" style="font-size:11px">Whiteboard</span><button class="btn" onclick="changePage(1)">Next ▶</button>
+<button class="btn" onclick="switchToWhiteboard()">Back to Whiteboard</button>
+</div>
+</div>
+<div class="right"><div id="status">⚫ OFFLINE</div><div id="vcBox"><div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#666">Video</div></div>
 <div style="display:flex;gap:4px"><button class="btn" style="flex:1" onclick="togMic()">Mic</button><button class="btn" style="flex:1" onclick="togCam()">Cam</button><button class="btn" style="flex:1" onclick="retryConnect()">Reconnect</button></div>
-<div class="perm" id="permPanel"><b style="font-size:12px">Teacher Controls</b><br><label style="font-size:11px"><input type="checkbox" id="pWrite"> Allow Student Write (Tick this!)</label><br><label style="font-size:11px"><input type="checkbox" id="pPdf"> Allow Student PDF</label><br><label style="font-size:11px"><input type="checkbox" id="pChat" checked> Allow Chat</label><br><button class="btn" style="width:100%;margin-top:6px;background:#ef4444" onclick="endClassForAll()">End For All</button><div style="font-size:10px;margin-top:6px;color:#22c55e">Connected boards: <span id="connCount">0</span></div></div>
-<div style="display:flex;gap:4px"><button class="btn" onclick="zoomPDF(0.2)">Zoom+</button><button class="btn" onclick="zoomPDF(-0.2)">Zoom-</button><button class="btn" onclick="changePage(-1)">◀</button><span id="pgInfo" style="font-size:11px">Whiteboard</span><button class="btn" onclick="changePage(1)">▶</button></div>
-<div id="log" style="height:80px;background:#020617;border:1px solid #1e293b;border-radius:6px;padding:5px;overflow:auto;font-size:10px"></div>
+<div class="perm" id="permPanel"><b style="font-size:12px">👨‍🏫 Teacher Authority</b><br><label style="font-size:11px"><input type="checkbox" id="pWrite"> Allow Student Write</label><br><label style="font-size:11px"><input type="checkbox" id="pChat" checked> Allow Chat</label><br><button class="btn" style="width:100%;margin-top:6px;background:#ef4444" onclick="endClassForAll()">End For All</button><div style="font-size:10px;margin-top:6px;color:#22c55e">Boards connected: <span id="connCount">0</span></div></div>
+<div style="font-size:11px;font-weight:700" class="teacherOnly">Slides - Fixed 1000x700 (Teacher only)</div><div class="slideBar teacherOnly" id="slideBar"></div><div id="log" style="height:80px;background:#020617;border:1px solid #1e293b;border-radius:6px;padding:5px;overflow:auto;font-size:10px"></div>
 </div></div>
 <input type="file" id="pdfIn" accept="application/pdf" hidden>
 <script>
 let room=(new URLSearchParams(location.search).get('room')||'mohan-class-1').toLowerCase().replace(/[^a-z0-9-]/g,'-'); let role=new URLSearchParams(location.search).get('role')||'teacher'; let isTeacher=role==='teacher';
 document.getElementById('roomLabel').textContent=room+' | '+role.toUpperCase();
-if(isTeacher){ document.getElementById('clsTx').textContent='Start Class'; } else { document.getElementById('clsTx').textContent='Join Class'; document.getElementById('floatTB').classList.add('toolbarDisabled'); }
-let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d'), board=document.getElementById('board'), ctx=board.getContext('2d');
-function log(t){ let e=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; e.appendChild(d); e.scrollTop=9999; console.log(t); }
+if(isTeacher){ document.getElementById('clsTx').textContent='Start Class'; } else { document.getElementById('clsTx').textContent='Join Class'; document.getElementById('floatTB').classList.add('toolbarDisabled'); document.querySelectorAll('.teacherOnly').forEach(e=>e.style.display='none'); document.getElementById('permPanel').style.display='none'; }
+let pdfCanvas=document.getElementById('pdfCanvas'), pdfCtx=pdfCanvas.getContext('2d'), board=document.getElementById('board'), ctx=board.getContext('2d'), wrap=document.getElementById('wrap');
+function log(t){ let e=document.getElementById('log'); let d=document.createElement('div'); d.textContent=new Date().toLocaleTimeString()+': '+t; e.appendChild(d); e.scrollTop=9999; }
 let palette=['#000000','#ff0000','#00a8ff','#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff','#ff8c00','#00ffff','#a3e635'];
-let curColor='#000000', curSize=4, curTool='pen'; let slides=[{bg:'white',strokes:[],isPdf:false}], curSlide=0, pdfDoc=null, curPdfPage=1, pdfScale=1.2, perms={canWrite:false,canPdf:false,canChat:true};
+let curColor='#000000', curSize=4, curTool='pen'; let slides=[{bg:'white',strokes:[],isPdf:false}], curSlide=0, pdfDoc=null, curPdfPage=1, pdfScale=1.2, perms={canWrite:false,canChat:true};
 let pal=document.getElementById('pal'); palette.forEach((c,i)=>{ let d=document.createElement('div'); d.className='c'+(i===0?' on':''); d.style.background=c; d.onclick=()=>{ curColor=c; document.querySelectorAll('.c').forEach(x=>x.classList.remove('on')); d.classList.add('on'); }; pal.appendChild(d); });
-[2,4,8,12].forEach((s,i)=>{ let b=document.createElement('div'); b.className='sz'+(i===1?' on':''); b.textContent=s; b.onclick=()=>{ curSize=s; document.querySelectorAll('.sz').forEach(x=>x.classList.remove('on')); b.classList.add('on'); }; document.getElementById('szs').appendChild(b); });
-function drawBG(bg){ pdfCtx.fillStyle='#fff'; pdfCtx.fillRect(0,0,pdfCanvas.width,pdfCanvas.height); if(bg==='ruled'){ pdfCtx.strokeStyle='#93c5fd'; for(let y=40;y<pdfCanvas.height;y+=32){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(pdfCanvas.width,y); pdfCtx.stroke(); } } else if(bg==='graph'){ pdfCtx.strokeStyle='#ddd'; for(let x=0;x<pdfCanvas.width;x+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(x,0); pdfCtx.lineTo(x,pdfCanvas.height); pdfCtx.stroke(); } for(let y=0;y<pdfCanvas.height;y+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(pdfCanvas.width,y); pdfCtx.stroke(); } } }
-function redrawAll(){ pdfCanvas.width=1000; pdfCanvas.height=700; board.width=1000; board.height=700; pdfCanvas.style.width='1000px'; board.style.width='1000px'; pdfCanvas.style.height='700px'; board.style.height='700px'; let s=slides[curSlide]; if(!s.isPdf) drawBG(s.bg); ctx.clearRect(0,0,board.width,board.height); s.strokes.forEach(st=>drawStroke(st)); updateLock(); }
-function drawStroke(st){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.globalCompositeOperation='source-over'; if(st.type==='pen'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='rect'){ ctx.strokeRect(st.x1,st.y1,st.x2-st.x1,st.y2-st.y1);} else if(st.type==='circle'){ let r=Math.hypot(st.x2-st.x1,st.y2-st.y1); ctx.beginPath(); ctx.arc(st.x1,st.y1,r,0,6.28); ctx.stroke(); } else if(st.type==='line'||st.type==='arrow'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } }
-function switchSlide(i){ curSlide=i; redrawAll(); broadcast({type:'switchSlide',idx:i}); } function addNewSlide(bg){ slides.push({bg:bg,strokes:[],isPdf:false}); switchSlide(slides.length-1); broadcast({type:'newSlide',bg:bg}); } function switchToWhiteboard(){ addNewSlide('white'); pdfDoc=null; document.getElementById('pgInfo').textContent='Whiteboard'; } function clearCurrent(b){ slides[curSlide].strokes=[]; ctx.clearRect(0,0,board.width,board.height); if(b) broadcast({type:'clear',slide:curSlide}); }
-function setTool(t){ curTool=t; document.querySelectorAll('.toolBtn').forEach(b=>b.classList.remove('on')); document.querySelector('[data-t="'+t+'"]')?.classList.add('on'); }
+[2,4,8,12].forEach((s,i)=>{ let b=document.createElement('div'); b.className='sz'+(i===1?' on':''); b.title=s+'px'; let dot=document.createElement('div'); dot.style.width=s+'px'; dot.style.height=s+'px'; dot.style.background=curColor; b.appendChild(dot); b.onclick=()=>{ curSize=s; document.querySelectorAll('.sz').forEach(x=>x.classList.remove('on')); b.classList.add('on'); }; document.getElementById('szs').appendChild(b); });
+function drawBG(bg){ pdfCtx.fillStyle='#fff'; pdfCtx.fillRect(0,0,1000,700); if(bg==='ruled'){ pdfCtx.strokeStyle='#93c5fd'; for(let y=40;y<700;y+=32){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } } else if(bg==='graph'){ pdfCtx.strokeStyle='#ddd'; for(let x=0;x<1000;x+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(x,0); pdfCtx.lineTo(x,700); pdfCtx.stroke(); } for(let y=0;y<700;y+=24){ pdfCtx.beginPath(); pdfCtx.moveTo(0,y); pdfCtx.lineTo(1000,y); pdfCtx.stroke(); } } }
+function redrawAll(){ // FIXED SIZE ALWAYS 1000x700 - never increase
+ pdfCanvas.width=1000; pdfCanvas.height=700; board.width=1000; board.height=700;
+ let s=slides[curSlide]; if(!s.isPdf) drawBG(s.bg); ctx.clearRect(0,0,1000,700); s.strokes.forEach(st=>drawStroke(st)); updateLock();
+}
+function drawStroke(st){ ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.globalCompositeOperation='source-over'; if(st.type==='pen'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } else if(st.type==='rect'){ ctx.strokeRect(st.x1,st.y1,st.x2-st.x1,st.y2-st.y1);} else if(st.type==='circle'){ let r=Math.hypot(st.x2-st.x1,st.y2-st.y1); ctx.beginPath(); ctx.arc(st.x1,st.y1,r,0,6.28); ctx.stroke(); } else if(st.type==='line'){ ctx.beginPath(); ctx.moveTo(st.x1,st.y1); ctx.lineTo(st.x2,st.y2); ctx.stroke(); } }
+function switchSlide(i){ curSlide=i; redrawAll(); broadcast({type:'switchSlide',idx:i}); }
+function addNewSlide(bg){ if(!isTeacher) return; slides.push({bg:bg,strokes:[],isPdf:false}); switchSlide(slides.length-1); broadcast({type:'newSlide',bg:bg}); log('New slide: '+bg); }
+function switchToWhiteboard(){ addNewSlide('white'); pdfDoc=null; document.getElementById('pdfFooter').classList.remove('show'); document.getElementById('pgInfo').textContent='Whiteboard'; }
+function clearCurrent(b){ slides[curSlide].strokes=[]; ctx.clearRect(0,0,1000,700); if(b) broadcast({type:'clear',slide:curSlide}); }
+function setTool(t){
+ curTool=t; document.querySelectorAll('.toolBtn').forEach(b=>b.classList.remove('on')); document.querySelector('[data-t="'+t+'"]')?.classList.add('on');
+ board.classList.remove('cursor-pen','cursor-eraser','cursor-hand'); wrap.classList.remove('cursor-hand');
+ if(t==='pen') board.classList.add('cursor-pen');
+ else if(t==='eraser'||t==='strokeEraser') board.classList.add('cursor-eraser');
+ else if(t==='hand'){ board.classList.add('cursor-hand'); wrap.classList.add('cursor-hand'); }
+ else board.style.cursor='crosshair';
+}
 function updateLock(){ let tb=document.getElementById('floatTB'); if(!isTeacher &&!perms.canWrite){ tb.classList.add('toolbarDisabled'); } else { tb.classList.remove('toolbarDisabled'); } document.getElementById('connCount').textContent=dataConns.length; }
+// HAND TOOL PANNING
+let isPanning=false, startX, startY, scrollLeft, scrollTop;
+wrap.addEventListener('pointerdown',e=>{ if(curTool!=='hand') return; isPanning=true; startX=e.pageX-wrap.offsetLeft; startY=e.pageY-wrap.offsetTop; scrollLeft=wrap.scrollLeft; scrollTop=wrap.scrollTop; });
+wrap.addEventListener('pointermove',e=>{ if(!isPanning) return; e.preventDefault(); let x=e.pageX-wrap.offsetLeft; let y=e.pageY-wrap.offsetTop; wrap.scrollLeft=scrollLeft-(x-startX); wrap.scrollTop=scrollTop-(y-startY); });
+wrap.addEventListener('pointerup',()=>isPanning=false); wrap.addEventListener('pointerleave',()=>isPanning=false);
+// DRAWING
 let drawing=false,sx=0,sy=0,lx=0,ly=0;
-board.addEventListener('pointerdown',e=>{ if(!isTeacher &&!perms.canWrite){ log('Write blocked - Teacher must allow'); return; } drawing=true; let r=board.getBoundingClientRect(); sx=(e.clientX-r.left)*(board.width/r.width); sy=(e.clientY-r.top)*(board.height/r.height); lx=sx; ly=sy; });
-board.addEventListener('pointermove',e=>{ if(!drawing) return; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.width); if(curTool==='pen'){ let st={type:'pen',x1:lx,y1:ly,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; ctx.strokeStyle=curColor; ctx.lineWidth=curSize; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke(); slides[curSlide].strokes.push(st); broadcast(st); } else if(curTool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,16,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; broadcast({type:'erasePixel',x,y,slide:curSlide}); } lx=x; ly=y; });
-board.addEventListener('pointerup',e=>{ if(!drawing) return; drawing=false; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(board.width/r.width); let y=(e.clientY-r.top)*(board.height/r.width); if(['rect','circle','line'].includes(curTool)){ let st={type:curTool,x1:sx,y1:sy,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; slides[curSlide].strokes.push(st); redrawAll(); broadcast(st); } });
-async function renderPDFPage(){ if(!pdfDoc) return; let page=await pdfDoc.getPage(curPdfPage); let vp=page.getViewport({scale:pdfScale}); pdfCanvas.width=vp.width; pdfCanvas.height=vp.height; board.width=vp.width; board.height=vp.height; pdfCanvas.style.width=vp.width+'px'; board.style.width=vp.width+'px'; pdfCanvas.style.height=vp.height+'px'; board.style.height=vp.height+'px'; await page.render({canvasContext:pdfCtx,viewport:vp}).promise; document.getElementById('pgInfo').textContent='Page '+curPdfPage+'/'+pdfDoc.numPages; ctx.clearRect(0,0,board.width,board.height); slides[curSlide].strokes.forEach(s=>drawStroke(s)); }
-async function loadPDF(f){ let buf=await f.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPdfPage=1; pdfScale=1.2; slides[curSlide]={bg:'pdf',strokes:[],isPdf:true}; await renderPDFPage(); }
+board.addEventListener('pointerdown',e=>{
+ if(curTool==='hand') return;
+ if(!isTeacher &&!perms.canWrite){ log('Write blocked'); return; }
+ drawing=true; let r=board.getBoundingClientRect(); sx=(e.clientX-r.left)*(1000/r.width); sy=(e.clientY-r.top)*(700/r.height); lx=sx; ly=sy;
+ // pen tab pressure support
+ if(e.pressure) curSize=Math.max(1, e.pressure*12);
+});
+board.addEventListener('pointermove',e=>{
+ if(!drawing || curTool==='hand') return; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(1000/r.width); let y=(e.clientY-r.top)*(700/r.height);
+ if(curTool==='pen'){ let st={type:'pen',x1:lx,y1:ly,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; ctx.strokeStyle=curColor; ctx.lineWidth=curSize; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke(); slides[curSlide].strokes.push(st); broadcast(st); }
+ else if(curTool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,16,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; broadcast({type:'erasePixel',x,y,slide:curSlide}); }
+ lx=x; ly=y;
+});
+board.addEventListener('pointerup',e=>{
+ if(!drawing) return; drawing=false; let r=board.getBoundingClientRect(); let x=(e.clientX-r.left)*(1000/r.width); let y=(e.clientY-r.top)*(700/r.height);
+ if(['rect','circle','line'].includes(curTool)){ let st={type:curTool,x1:sx,y1:sy,x2:x,y2:y,color:curColor,size:curSize,slide:curSlide}; slides[curSlide].strokes.push(st); redrawAll(); broadcast(st); }
+});
+async function renderPDFPage(){ if(!pdfDoc) return; let page=await pdfDoc.getPage(curPdfPage); let vp=page.getViewport({scale:pdfScale}); pdfCanvas.width=vp.width; pdfCanvas.height=vp.height; board.width=vp.width; board.height=vp.height; pdfCanvas.style.width=vp.width+'px'; board.style.width=vp.width+'px'; pdfCanvas.style.height=vp.height+'px'; board.style.height=vp.height+'px'; await page.render({canvasContext:pdfCtx,viewport:vp}).promise; document.getElementById('pgInfo').textContent='Page '+curPdfPage+'/'+pdfDoc.numPages; ctx.clearRect(0,0,board.width,board.height); slides[curSlide].strokes.forEach(s=>drawStroke(s)); document.getElementById('pdfFooter').classList.add('show'); }
+async function loadPDF(f){ let buf=await f.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(buf).promise; curPdfPage=1; pdfScale=1.2; slides[curSlide]={bg:'pdf',strokes:[],isPdf:true}; await renderPDFPage(); broadcast({type:'pdfLoaded'}); }
 function zoomPDF(d){ if(!pdfDoc) return; pdfScale=Math.max(0.4,Math.min(3,pdfScale+d)); renderPDFPage(); broadcast({type:'zoom',scale:pdfScale}); }
 function changePage(d){ if(!pdfDoc) return; let np=curPdfPage+d; if(np<1||np>pdfDoc.numPages) return; curPdfPage=np; renderPDFPage(); broadcast({type:'pdfPage',page:np}); }
 document.getElementById('pdfIn').addEventListener('change',e=>{ if(e.target.files[0]) loadPDF(e.target.files[0]); });
 let myPeer=null,myStream=null,dataConns=[],teacherId='tutor-mohan-'+room;
-function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o); }catch{} }); if(o.type) log('Sent '+o.type+' to '+dataConns.length+' peers'); else log('Sent stroke '+o.type+' to '+dataConns.length); }
+function broadcast(o){ dataConns.forEach(c=>{ try{ if(c.open) c.send(o);}catch{}}); }
 function handleData(msg){
- log('Received: '+ (msg.type||'stroke') );
- if(['pen','rect','circle','line','arrow'].includes(msg.type)){
-   let idx=msg.slide||0; if(!slides[idx]) slides[idx]={bg:'white',strokes:[],isPdf:false}; slides[idx].strokes.push(msg); if(idx===curSlide){ drawStroke(msg); if(msg.type!=='pen') redrawAll(); }
- } else if(msg.type==='erasePixel'){ if(msg.slide!==curSlide) return; ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(msg.x,msg.y,16,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
- else if(msg.type==='clear'){ if(slides[msg.slide]){ slides[msg.slide].strokes=[]; if(msg.slide===curSlide) ctx.clearRect(0,0,board.width,board.height); } }
- else if(msg.type==='newSlide'){ slides.push({bg:msg.bg,strokes:[],isPdf:false}); }
- else if(msg.type==='switchSlide'){ curSlide=msg.idx; redrawAll(); }
- else if(msg.type==='perms'){ perms=msg.perms; updateLock(); log('Perms updated Write='+perms.canWrite); }
- else if(msg.type==='classEnded'){ alert('Teacher ended class'); location.reload(); }
- else if(msg.type==='zoom'){ pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); }
- else if(msg.type==='pdfPage'){ curPdfPage=msg.page; if(pdfDoc) renderPDFPage(); }
+ if(['pen','rect','circle','line'].includes(msg.type)){ let idx=msg.slide||0; if(!slides[idx]) slides[idx]={bg:'white',strokes:[],isPdf:false}; slides[idx].strokes.push(msg); if(idx===curSlide){ drawStroke(msg); if(msg.type!=='pen') redrawAll(); } }
+ else if(msg.type==='erasePixel'){ if(msg.slide!==curSlide) return; ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(msg.x,msg.y,16,0,6.28); ctx.fill(); ctx.globalCompositeOperation='source-over'; }
+ else if(msg.type==='clear'){ if(slides[msg.slide]){ slides[msg.slide].strokes=[]; if(msg.slide===curSlide) ctx.clearRect(0,0,1000,700); } }
+ else if(msg.type==='newSlide'){ slides.push({bg:msg.bg,strokes:[],isPdf:false}); } else if(msg.type==='switchSlide'){ curSlide=msg.idx; redrawAll(); }
+ else if(msg.type==='perms'){ perms=msg.perms; updateLock(); } else if(msg.type==='classEnded'){ alert('Teacher ended'); location.reload(); }
+ else if(msg.type==='zoom'){ pdfScale=msg.scale; if(pdfDoc) renderPDFPage(); } else if(msg.type==='pdfPage'){ curPdfPage=msg.page; if(pdfDoc) renderPDFPage(); }
 }
 function addV(id,s){ let box=document.getElementById('vcBox'); if(document.getElementById('v-'+id)) return; let v=document.createElement('video'); v.id='v-'+id; v.srcObject=s; v.autoplay=true; v.playsInline=true; if(id==='me') v.muted=true; v.play(); box.appendChild(v); }
-async function createTeacherPeer(){ log('Teacher ID='+teacherId); myPeer=new Peer(teacherId); myPeer.on('open',id=>{ log('✅ TEACHER LIVE '+id); document.getElementById('status').textContent='🟢 TEACHER LIVE - Students can JOIN NOW'; document.getElementById('status').style.background='#052e16'; perms.canWrite=true; }); myPeer.on('call',call=>{ log('Student video call'); call.answer(myStream); call.on('stream',s=>addV(call.peer,s)); }); myPeer.on('connection',conn=>{ log('✅✅ Student board CONNECTED - count='+(dataConns.length+1)); dataConns.push(conn); updateLock(); conn.on('data',handleData); conn.on('open',()=>{ conn.send({type:'perms',perms}); log('Sent perms to student'); }); }); myPeer.on('error',e=>{ log('Peer error '+e.type); if(e.type==='unavailable-id'){ setTimeout(()=>{ myPeer.destroy(); createTeacherPeer(); },2000); } }); }
+async function createTeacherPeer(){ myPeer=new Peer(teacherId); myPeer.on('open',id=>{ log('✅ TEACHER LIVE'); document.getElementById('status').textContent='🟢 TEACHER LIVE - Room '+room; perms.canWrite=true; updateLock(); }); myPeer.on('call',call=>{ call.answer(myStream); call.on('stream',s=>addV(call.peer,s)); }); myPeer.on('connection',conn=>{ dataConns.push(conn); updateLock(); conn.on('data',handleData); conn.on('open',()=>{ conn.send({type:'perms',perms}); }); }); myPeer.on('error',e=>{ if(e.type==='unavailable-id'){ setTimeout(()=>{ myPeer.destroy(); createTeacherPeer(); },2000); } }); }
 async function initVC(){ let box=document.getElementById('vcBox'); box.innerHTML=''; try{ myStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }catch(err){ alert('Allow camera'); return; } addV('me',myStream); if(isTeacher){ await createTeacherPeer(); } else { let sid='stu-'+Math.random().toString(36).slice(2,6); myPeer=new Peer(sid); myPeer.on('open',()=>setTimeout(callTeacher,800)); } }
-function callTeacher(){ log('Calling '+teacherId); let call=myPeer.call(teacherId,myStream); if(!call){ document.getElementById('status').textContent='⏳ Waiting for Teacher START...'; setTimeout(callTeacher,3000); return; } call.on('stream',s=>{ addV('teacher',s); document.getElementById('status').textContent='🟢 VIDEO CONNECTED'; }); call.on('error',()=>setTimeout(callTeacher,3000)); let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); updateLock(); log('✅✅ BOARD LINKED - Draw now will sync! Total='+dataConns.length); document.getElementById('status').textContent='🟢 BOARD LINKED - Draw to test sync'; }); conn.on('data',handleData); conn.on('error',()=>setTimeout(callTeacher,3000)); }
+function callTeacher(){ let call=myPeer.call(teacherId,myStream); if(!call){ document.getElementById('status').textContent='⏳ Waiting for Teacher...'; setTimeout(callTeacher,3000); return; } call.on('stream',s=>{ addV('teacher',s); document.getElementById('status').textContent='🟢 CONNECTED'; }); let conn=myPeer.connect(teacherId); conn.on('open',()=>{ dataConns.push(conn); updateLock(); document.getElementById('status').textContent='🟢 BOARD LINKED'; }); conn.on('data',handleData); }
 function retryConnect(){ if(!isTeacher) callTeacher(); }
 async function togCls(){ let isStart=document.getElementById('clsTx').textContent.includes('Start')||document.getElementById('clsTx').textContent.includes('Join'); if(isStart){ document.getElementById('clsTx').textContent=isTeacher?'End Class':'Leave'; document.getElementById('clsBtn').style.background='#ef4444'; await initVC(); } else { endClassForAll(); } }
 function endClassForAll(){ broadcast({type:'classEnded'}); if(myStream) myStream.getTracks().forEach(x=>x.stop()); if(myPeer) myPeer.destroy(); location.reload(); }
 function togMic(){ if(myStream) myStream.getAudioTracks().forEach(a=>a.enabled=!a.enabled); } function togCam(){ if(myStream) myStream.getVideoTracks().forEach(a=>a.enabled=!a.enabled); }
 document.getElementById('pWrite')?.addEventListener('change',e=>{ perms.canWrite=e.target.checked; broadcast({type:'perms',perms}); updateLock(); });
-redrawAll(); log('Ready. Room='+room);
+redrawAll(); setTool('pen'); log('Ready - Fixed size 1000x700 - PenTab friendly');
 </script></body></html>
